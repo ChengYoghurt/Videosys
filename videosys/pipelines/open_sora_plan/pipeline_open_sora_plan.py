@@ -279,9 +279,13 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
             if config.version == "v110":
                 text_encoder = T5EncoderModel.from_pretrained(config.text_encoder, torch_dtype=dtype)
             elif config.version == "v120":
+                # text_encoder = MT5EncoderModel.from_pretrained(
+                #     config.text_encoder, low_cpu_mem_usage=True, torch_dtype=dtype
+                # )
                 text_encoder = MT5EncoderModel.from_pretrained(
-                    config.text_encoder, low_cpu_mem_usage=True, torch_dtype=dtype
-                )
+                    "/home/yfeng/.cache/videosys/google_mt5_xxl",
+                    low_cpu_mem_usage=True, torch_dtype=dtype
+                    )
 
         if vae is None:
             if config.version == "v110":
