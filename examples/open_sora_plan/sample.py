@@ -1,5 +1,5 @@
 from videosys import OpenSoraPlanConfig, VideoSysEngine
-
+import torch
 
 def run_base():
     # open-sora-plan v1.2.0
@@ -8,15 +8,25 @@ def run_base():
     config = OpenSoraPlanConfig(version="v120", transformer_type="29x480p", num_gpus=1)
     engine = VideoSysEngine(config)
 
-    prompt = "Sunset over the sea."
+    # prompt = "Sunset over the sea."
+    prompt = "A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, along red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is dampand reflective, creating a mirror effect of thecolorful lights. Many pedestrians walk about."
+    # Timing events
+    inf_start = torch.cuda.Event(enable_timing=True)
+    inf_end = torch.cuda.Event(enable_timing=True)
+
+    inf_start.record()
     # seed=-1 means random seed. >0 means fixed seed.
-    video = engine.generate(
+    video, timings = engine.generate(
         prompt=prompt,
         guidance_scale=7.5,
         num_inference_steps=100,
         seed=-1,
     ).video[0]
-    engine.save_video(video, f"./outputs/{prompt}.mp4")
+
+    inf_end.record()
+    torch.cuda.synchronize()
+    print(f"Tot inference time:{inf_start.elapsed_time(inf_end)}")
+    engine.save_video(video, f"./outputs/{prompt[:20]}.mp4")
 
 
 def run_low_mem():
