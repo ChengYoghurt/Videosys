@@ -1314,6 +1314,18 @@ class BasicTransformerBlock(nn.Module):
         self.cross_last = None
         self.cross_count = 0
 
+        self.other_time     = 0
+        self.self_attn_time = 0
+        self.cross_attn_time= 0
+        self.ff_time        = 0
+
+    def reset_times(self):
+        # Reset the time lists before the next round of profiling
+        self.other_time     = 0
+        self.self_attn_time = 0
+        self.cross_attn_time= 0
+        self.ff_time        = 0
+
     def set_chunk_feed_forward(self, chunk_size: Optional[int], dim: int = 0):
         # Sets chunk feed-forward
         self._chunk_size = chunk_size
@@ -1334,6 +1346,12 @@ class BasicTransformerBlock(nn.Module):
         added_cond_kwargs: Optional[Dict[str, torch.Tensor]] = None,
         org_timestep: Optional[torch.LongTensor] = None,
     ) -> torch.FloatTensor:
+
+        # Timing events
+        start = torch.cuda.Event(enable_timing=True)
+        end = torch.cuda.Event(enable_timing=True)
+
+        start.record()
         # Notice that normalization is always applied before the real computation in the following blocks.
         # 0. Self-Attention
         batch_size = hidden_states.shape[0]
@@ -1350,10 +1368,19 @@ class BasicTransformerBlock(nn.Module):
         cross_attention_kwargs = cross_attention_kwargs.copy() if cross_attention_kwargs is not None else {}
         gligen_kwargs = cross_attention_kwargs.pop("gligen", None)
 
+        end.record()
+        torch.cuda.synchronize()
+        self.other_time += start.elapsed_time(end)
+        logger.info(f"Before Self-Attention Input Shape: hid={hidden_states.shape}, height={height}, width={width}, frame={frame}")
+        logger.info(f"Before Self-Attention Shift Execution Time: {start.elapsed_time(end)} ms")
+
+
         broadcast, self.spatial_count = if_broadcast_spatial(int(org_timestep[0]), self.spatial_count)
         if broadcast:
             attn_output = self.spatial_last
         else:
+            start.record()
+
             norm_hidden_states = self.norm1(hidden_states)
             norm_hidden_states = norm_hidden_states * (1 + scale_msa) + shift_msa
             if self.pos_embed is not None:
@@ -1369,8 +1396,16 @@ class BasicTransformerBlock(nn.Module):
                 **cross_attention_kwargs,
             )
 
+            end.record()
+            torch.cuda.synchronize()
+            self.self_attn_time += start.elapsed_time(end)
+            logger.info(f"Self-Attention Input Shape: norm_hid={norm_hidden_states.shape}")
+            logger.info(f"Self-Attention Execution Time: {start.elapsed_time(end)} ms")
+
             if enable_pab():
                 self.spatial_last = attn_output
+
+        start.record()
 
         if self.norm_type == "ada_norm_zero":
             attn_output = gate_msa.unsqueeze(1) * attn_output
@@ -1385,6 +1420,10 @@ class BasicTransformerBlock(nn.Module):
         if gligen_kwargs is not None:
             hidden_states = self.fuser(hidden_states, gligen_kwargs["objs"])
 
+        end.record()
+        torch.cuda.synchronize()
+        self.other_time += start.elapsed_time(end)
+
         # 3. Cross-Attention
         if self.attn2 is not None:
             broadcast, self.cross_count = if_broadcast_cross(int(org_timestep[0]), self.cross_count)
@@ -1392,6 +1431,8 @@ class BasicTransformerBlock(nn.Module):
                 attn_output = self.cross_last
 
             else:
+                start.record()
+
                 if self.norm_type == "ada_norm":
                     norm_hidden_states = self.norm2(hidden_states, timestep)
                 elif self.norm_type in ["ada_norm_zero", "layer_norm", "layer_norm_i2vgen"]:
@@ -1414,10 +1455,18 @@ class BasicTransformerBlock(nn.Module):
                     attention_mask=encoder_attention_mask,
                     **cross_attention_kwargs,
                 )
+                
+                end.record()
+                torch.cuda.synchronize()
+                self.cross_attn_time += start.elapsed_time(end)
+                logger.info(f"Cross-Attention Input Shape: norm_hid={norm_hidden_states.shape}, text_hid={encoder_hidden_states.shape}")
+                logger.info(f"Cross-Attention Execution Time: {start.elapsed_time(end)} ms")
 
                 if enable_pab():
                     self.cross_last = attn_output
             hidden_states = attn_output + hidden_states
+
+        start.record()
 
         # 4. Feed-forward
         # i2vgen doesn't have this norm 🤷‍♂️
@@ -1451,6 +1500,12 @@ class BasicTransformerBlock(nn.Module):
         hidden_states = ff_output + hidden_states
         if hidden_states.ndim == 4:
             hidden_states = hidden_states.squeeze(1)
+
+        end.record()
+        torch.cuda.synchronize()
+        self.ff_time += start.elapsed_time(end)
+        logger.info(f"MLP Input Shape: norm_hid={norm_hidden_states.shape}, ff_output={ff_output.shape}")
+        logger.info(f"MLP Execution Time: {start.elapsed_time(end)} ms")
 
         return hidden_states
 
