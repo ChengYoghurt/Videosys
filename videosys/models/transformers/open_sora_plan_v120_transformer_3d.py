@@ -1370,10 +1370,8 @@ class BasicTransformerBlock(nn.Module):
 
         end.record()
         torch.cuda.synchronize()
+        # print(f"BasicTransformerBlock: other={start.elapsed_time(end)}")
         self.other_time += start.elapsed_time(end)
-        logger.info(f"Before Self-Attention Input Shape: hid={hidden_states.shape}, height={height}, width={width}, frame={frame}")
-        logger.info(f"Before Self-Attention Shift Execution Time: {start.elapsed_time(end)} ms")
-
 
         broadcast, self.spatial_count = if_broadcast_spatial(int(org_timestep[0]), self.spatial_count)
         if broadcast:
@@ -1398,9 +1396,8 @@ class BasicTransformerBlock(nn.Module):
 
             end.record()
             torch.cuda.synchronize()
+            # print(f"BasicTransformerBlock: self_attn={start.elapsed_time(end)}")
             self.self_attn_time += start.elapsed_time(end)
-            logger.info(f"Self-Attention Input Shape: norm_hid={norm_hidden_states.shape}")
-            logger.info(f"Self-Attention Execution Time: {start.elapsed_time(end)} ms")
 
             if enable_pab():
                 self.spatial_last = attn_output
@@ -1459,8 +1456,6 @@ class BasicTransformerBlock(nn.Module):
                 end.record()
                 torch.cuda.synchronize()
                 self.cross_attn_time += start.elapsed_time(end)
-                logger.info(f"Cross-Attention Input Shape: norm_hid={norm_hidden_states.shape}, text_hid={encoder_hidden_states.shape}")
-                logger.info(f"Cross-Attention Execution Time: {start.elapsed_time(end)} ms")
 
                 if enable_pab():
                     self.cross_last = attn_output
@@ -1504,8 +1499,6 @@ class BasicTransformerBlock(nn.Module):
         end.record()
         torch.cuda.synchronize()
         self.ff_time += start.elapsed_time(end)
-        logger.info(f"MLP Input Shape: norm_hid={norm_hidden_states.shape}, ff_output={ff_output.shape}")
-        logger.info(f"MLP Execution Time: {start.elapsed_time(end)} ms")
 
         return hidden_states
 
@@ -1640,6 +1633,11 @@ class OpenSoraT2V(ModelMixin, ConfigMixin):
 
         # parallel
         self.parallel_manager: ParallelManager = None
+
+        self.tot_other_time = 0
+        self.tot_self_attn_time = 0
+        self.tot_cross_attn_time = 0
+        self.tot_ff_time = 0
 
     def _init_patched_inputs(self, norm_type):
         assert self.config.sample_size_t is not None, "OpenSoraT2V over patched input must provide sample_size_t"

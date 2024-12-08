@@ -1170,6 +1170,26 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
                     step_idx = i // getattr(self.scheduler, "order", 1)
                     callback(step_idx, t, latents)
 
+        for block in self.transformer.transformer_blocks:
+            self.transformer.tot_other_time += block.other_time
+            self.transformer.tot_self_attn_time += block.self_attn_time
+            self.transformer.tot_cross_attn_time += block.cross_attn_time
+            self.transformer.tot_ff_time += block.ff_time
+
+        logger.info(
+                    "TransformerBlocks Timing Results:"
+                    f" tot_other_time: {self.transformer.tot_other_time} \
+                    tot_self_attn_time: {self.transformer.tot_self_attn_time} \
+                    tot_cross_time: {self.transformer.tot_cross_attn_time} \
+                    tot_ff_time: {self.transformer.tot_ff_time} \
+                    "
+                )
+        
+        timings_dict = {"tot_other_time": self.transformer.tot_other_time,
+                        "tot_self_attn_time": self.transformer.tot_self_attn_time,
+                        "tot_cross_time", self.transformer.tot_cross_attn_time,
+                        "tot_ff_time", self.transformer.tot_ff_time}
+
         if not output_type == "latents":
             video = self.decode_latents(latents)
             video = video[:, :num_frames, :height, :width]
@@ -1183,7 +1203,7 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
         if not return_dict:
             return (video,)
 
-        return VideoSysPipelineOutput(video=video)
+        return VideoSysPipelineOutput(video=video), timings_dict
 
     def decode_latents(self, latents):
         video = self.vae(latents.to(self.vae.vae.dtype))
