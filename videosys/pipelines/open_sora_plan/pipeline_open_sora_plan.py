@@ -1180,15 +1180,15 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
                     "TransformerBlocks Timing Results:"
                     f" tot_other_time: {self.transformer.tot_other_time} \
                     tot_self_attn_time: {self.transformer.tot_self_attn_time} \
-                    tot_cross_time: {self.transformer.tot_cross_attn_time} \
+                    tot_cross_attn_time: {self.transformer.tot_cross_attn_time} \
                     tot_ff_time: {self.transformer.tot_ff_time} \
                     "
                 )
         
         timings_dict = {"tot_other_time": self.transformer.tot_other_time,
                         "tot_self_attn_time": self.transformer.tot_self_attn_time,
-                        "tot_cross_time", self.transformer.tot_cross_attn_time,
-                        "tot_ff_time", self.transformer.tot_ff_time}
+                        "tot_cross_attn_time": self.transformer.tot_cross_attn_time,
+                        "tot_ff_time": self.transformer.tot_ff_time}
 
         if not output_type == "latents":
             video = self.decode_latents(latents)
