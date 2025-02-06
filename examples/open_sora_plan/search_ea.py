@@ -223,8 +223,8 @@ def main():
     searcher = EvolutionSearcher(opt=opt, engine=engine, time_step=opt.time_step, ref_latent=opt.ref_latent, ref_sigma=opt.ref_sigma, device=device, dpm_params=dpm_params)
     logging.info("Integrated Open-Sora-Plan Successfully ......")
 
-    # searcher.search()
-    # logging.info('total searching time = {:.2f} hours'.format((time.time() - t) / 3600))
+    searcher.search()
+    logging.info('total searching time = {:.2f} hours'.format((time.time() - t) / 3600))
 
 if __name__ == '__main__':
     main()

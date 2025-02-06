@@ -41,6 +41,7 @@ from ldm.modules.diffusionmodules.util import make_ddim_sampling_parameters, mak
 import copy
 
 # Open-Sora related imports
+from diffusers.schedulers import EulerAncestralDiscreteScheduler, PNDMScheduler, DDIMScheduler
 
 choice = lambda x: x[np.random.randint(len(x))] if isinstance(
     x, tuple) else choice(tuple(x))
@@ -77,13 +78,17 @@ class EvolutionSearcher(object):
         self.use_ddim_init_x = opt.use_ddim_init_x
 
         # TODO: Load ref_latent
-        self.ref_latent = torch.load(ref_latent)
+        self.ref_video = torch.load(ref_latent)
         self.ref_sigma = None
         #self.ref_mu = np.load(ref_mu)
         # self.ref_sigma = np.load(ref_sigma)
 
         self.dpm_params = dpm_params
         self.device = device
+    def get_full_timesteps(self, num_inference_steps=100, device='cuda'):
+        scheduler = EulerAncestralDiscreteScheduler()
+        scheduler.set_timesteps(num_inference_steps, device=device)
+        return scheduler.timesteps.tolist()
 
     def update_top_k(self, candidates, *, k, key, reverse=False):
         assert k in self.keep_top_k
@@ -127,7 +132,6 @@ class EvolutionSearcher(object):
     
     def get_random_before_search(self, num):
         logging.info('random select ........')
-        self.model_args = self.init_model_args(device=self.device)
         while len(self.candidates) < num:
             if self.opt.dpm_solver:
                 cand = self.sample_active_subnet_dpm()
@@ -197,7 +201,6 @@ class EvolutionSearcher(object):
             logging.info('cross {}/{}'.format(len(res), cross_num))
 
         logging.info('cross_num = {}'.format(len(res)))
-        exit(0)
         return res
     
     def get_mutation(self, k, mutation_num, m_prob):
@@ -213,7 +216,7 @@ class EvolutionSearcher(object):
 
             candidates = []
             # for i in range(self.sampler.ddpm_num_timesteps):
-            for i in self.sampler.get_full_timesteps(additional_args=self.model_args): # TODO
+            for i in self.get_full_timesteps(): # TODO
                 if i not in cand:
                     candidates.append(i)
 
@@ -293,7 +296,7 @@ class EvolutionSearcher(object):
 
             candidates = []
             # for i in range(self.sampler.ddpm_num_timesteps):
-            for i in self.sampler.get_full_timesteps(additional_args=self.model_args):
+            for i in self.get_full_timesteps(additional_args=self.model_args):
                 if i not in cand:
                     candidates.append(i)
 
@@ -364,7 +367,7 @@ class EvolutionSearcher(object):
         # TODO: Swap the init timesteps with rf timesteps
         # original_num_steps = self.sampler.ddpm_num_timesteps
         # use_timestep = [i for i in range(original_num_steps)]
-        original_timestep = self.sampler.get_full_timesteps(additional_args=self.model_args)
+        original_timestep = self.get_full_timesteps()
         random.shuffle(original_timestep)
         use_timestep = original_timestep[:self.time_step] # time_step is set by ea searcher
         return use_timestep
@@ -377,9 +380,22 @@ class EvolutionSearcher(object):
         return use_timestep
     
     def get_cand_mse(self, cand=None, device='cuda'):
-        cand_latent = self.generate_cand_video(cand=cand)
+        # TODO
+        prompt = "A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about." # "Sunset over the sea."
+
+        cand_video = self.engine.generate(
+        prompt=prompt,
+        guidance_scale=7.5,
+        num_inference_steps=100,
+        seed=1024,
+        ea_timesteps=cand,
+        ).video[0]
         # MSE Calculation
-        mse_loss = F.mse_loss(cand_latent, self.ref_latent)
+        # print(f"Cand Video dtype: {cand_video.dtype}, Ref Video dtype: {self.ref_video.dtype}")
+        # :Cand Video dtype: torch.uint8, Ref Video dtype: torch.uint8
+        cand_video_float = cand_video.float() / 255.0
+        ref_video_float = self.ref_video.float() / 255.0
+        mse_loss = F.mse_loss(cand_video_float, ref_video_float)
         print("MSE Loss:", mse_loss.item())
         return mse_loss.item()
 

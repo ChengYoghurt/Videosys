@@ -1076,17 +1076,12 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
                 prompt_attention_mask = torch.cat([negative_prompt_attention_mask, prompt_attention_mask], dim=0)
 
         # 4. Prepare timesteps
-        # TODO: Add ea_timesteps
-        if ea_timesteps is not None:
-            num_inference_steps = len(ea_timesteps)
-            timesteps = ea_timesteps
+        if self._config.version == "v110":
+            self.scheduler.set_timesteps(num_inference_steps, device=device)
+            timesteps = self.scheduler.timesteps
         else:
-            if self._config.version == "v110":
-                self.scheduler.set_timesteps(num_inference_steps, device=device)
-                timesteps = self.scheduler.timesteps
-            else:
-                timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device, None)
-            print(f"osp retrieve_timesteps: {timesteps}")
+            timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device, ea_timesteps)
+
         # 5. Prepare latents.
         latent_channels = self.transformer.config.in_channels
         latents = self.prepare_latents(
@@ -1204,7 +1199,7 @@ def retrieve_timesteps(
     scheduler,
     num_inference_steps: Optional[int] = None,
     device: Optional[Union[str, torch.device]] = None,
-    timesteps: Optional[List[int]] = None,
+    timesteps: Optional[List[float]] = None,# Optional[List[int]] = None,
     **kwargs,
 ):
     """
@@ -1228,14 +1223,15 @@ def retrieve_timesteps(
         `Tuple[torch.Tensor, int]`: A tuple where the first element is the timestep schedule from the scheduler and the
         second element is the number of inference steps.
     """
+    # TODO: Consider timesteps as ea_timesteps and do not raise error
     if timesteps is not None:
-        accepts_timesteps = "timesteps" in set(inspect.signature(scheduler.set_timesteps).parameters.keys())
-        if not accepts_timesteps:
-            raise ValueError(
-                f"The current scheduler class {scheduler.__class__}'s `set_timesteps` does not support custom"
-                f" timestep schedules. Please check whether you are using the correct scheduler."
-            )
-        scheduler.set_timesteps(timesteps=timesteps, device=device, **kwargs)
+        # accepts_timesteps = "timesteps" in set(inspect.signature(scheduler.set_timesteps).parameters.keys())
+        # if not accepts_timesteps:
+        #     raise ValueError(
+        #         f"The current scheduler class {scheduler.__class__}'s `set_timesteps` does not support custom"
+        #         f" timestep schedules. Please check whether you are using the correct scheduler."
+        #     )
+        scheduler.set_timesteps(num_inference_steps, device=device, ea_timesteps=timesteps, **kwargs)
         timesteps = scheduler.timesteps
         num_inference_steps = len(timesteps)
     else:
