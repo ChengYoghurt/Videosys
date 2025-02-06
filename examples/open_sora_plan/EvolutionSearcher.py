@@ -51,11 +51,26 @@ choice = lambda x: x[np.random.randint(len(x))] if isinstance(
 # safety_feature_extractor = AutoFeatureExtractor.from_pretrained(safety_model_id)
 # safety_checker = StableDiffusionSafetyChecker.from_pretrained(safety_model_id)
 
+prompts = [
+    "a black dog wearing halloween costume", # animal
+    "an apartment building with balcony", # archi
+    "freshly baked finger looking cookies", # food
+    "people carving a pumpkin", # human
+    "scenic video of sunset", # scenery
+]
 
+def load_ref_videos(ref_videos_folder):
+    ref_videos = []
+    for i in range(5):
+        video_path = os.path.join(ref_videos_folder, f"{i}.pt")
+        video = torch.load(video_path)
+        video_normalized = video.float() / 255.0
+        ref_videos.append(video_normalized)
+    return ref_videos
 
 class EvolutionSearcher(object):
 
-    def __init__(self, opt, engine, time_step, ref_latent, ref_sigma, device, dpm_params=None):
+    def __init__(self, opt, engine, time_step, ref_videos, ref_sigma, device, dpm_params=None):
         self.opt = opt
         self.engine = engine
         self.time_step = time_step
@@ -78,13 +93,15 @@ class EvolutionSearcher(object):
         self.use_ddim_init_x = opt.use_ddim_init_x
 
         # TODO: Load ref_latent
-        self.ref_video = torch.load(ref_latent)
+        self.ref_videos = load_ref_videos(ref_videos_folder=ref_videos) # torch.load(ref_latent)
         self.ref_sigma = None
         #self.ref_mu = np.load(ref_mu)
         # self.ref_sigma = np.load(ref_sigma)
+        
 
         self.dpm_params = dpm_params
         self.device = device
+
     def get_full_timesteps(self, num_inference_steps=100, device='cuda'):
         scheduler = EulerAncestralDiscreteScheduler()
         scheduler.set_timesteps(num_inference_steps, device=device)
@@ -378,26 +395,25 @@ class EvolutionSearcher(object):
         use_timestep = use_timestep[:self.time_step + 1]
         # use_timestep = [use_timestep[i] + 1 for i in range(len(use_timestep))] 
         return use_timestep
-    
+    # TODO
     def get_cand_mse(self, cand=None, device='cuda'):
-        # TODO
-        prompt = "A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about." # "Sunset over the sea."
-
-        cand_video = self.engine.generate(
-        prompt=prompt,
-        guidance_scale=7.5,
-        num_inference_steps=100,
-        seed=1024,
-        ea_timesteps=cand,
-        ).video[0]
-        # MSE Calculation
-        # print(f"Cand Video dtype: {cand_video.dtype}, Ref Video dtype: {self.ref_video.dtype}")
-        # :Cand Video dtype: torch.uint8, Ref Video dtype: torch.uint8
-        cand_video_float = cand_video.float() / 255.0
-        ref_video_float = self.ref_video.float() / 255.0
-        mse_loss = F.mse_loss(cand_video_float, ref_video_float)
-        print("MSE Loss:", mse_loss.item())
-        return mse_loss.item()
+        mse_scores = []
+        for i, prompt in enumerate(prompts):
+            cand_video = self.engine.generate(
+            prompt=prompt,
+            guidance_scale=7.5,
+            num_inference_steps=100,
+            seed=1024,
+            ea_timesteps=cand,
+            ).video[0]
+            cand_video_float = cand_video.float() / 255.0
+            ref_video_float = self.ref_videos[i] # normalized alrd
+            mse_loss = F.mse_loss(cand_video_float, ref_video_float)
+            mse_scores.append(mse_loss.item())
+        
+        mean_mse = np.mean(mse_scores)
+        print("Mean MSE Loss:", mean_mse)
+        return mean_mse
 
     def search(self):
         logging.info('population_num = {} select_num = {} mutation_num = {} crossover_num = {} random_num = {} max_epochs = {}'.format(

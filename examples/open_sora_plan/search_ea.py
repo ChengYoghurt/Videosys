@@ -153,7 +153,7 @@ def main():
         default=25,
     )
     parser.add_argument(
-        "--ref_latent",
+        "--ref_videos",
         type=str,
         default='',
     )
@@ -220,7 +220,7 @@ def main():
 
     ## build EA
     t = time.time()
-    searcher = EvolutionSearcher(opt=opt, engine=engine, time_step=opt.time_step, ref_latent=opt.ref_latent, ref_sigma=opt.ref_sigma, device=device, dpm_params=dpm_params)
+    searcher = EvolutionSearcher(opt=opt, engine=engine, time_step=opt.time_step, ref_videos=opt.ref_videos, ref_sigma=opt.ref_sigma, device=device, dpm_params=dpm_params)
     logging.info("Integrated Open-Sora-Plan Successfully ......")
 
     searcher.search()

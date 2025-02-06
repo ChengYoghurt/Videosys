@@ -5,10 +5,10 @@ python examples/open_sora_plan/search_ea.py \
 --num_sample 1000 \
 --time_step 50 \
 --max_epochs 10 \
---population_num 50 \
---mutation_num 25 \
---crossover_num 10 \
+--population_num 5 \
+--mutation_num 2 \
+--crossover_num 1 \
 --seed 1024 \
 --use_ddim_init_x false \
---ref_latent '/home/yfeng/ygcheng/src/VideoSys/examples/open_sora_plan/assets/ref_videos/generated_video.pt' \
+--ref_videos '/home/yfeng/ygcheng/src/VideoSys/examples/open_sora_plan/assets/ref_videos' \
 --ref_sigma '/home/yfeng/ygcheng/src/AutoDiffusion/assets/coco2014_sigma.npy' \
