@@ -8,15 +8,32 @@ def run_base():
     config = OpenSoraPlanConfig(version="v120", transformer_type="29x480p", num_gpus=1)
     engine = VideoSysEngine(config)
 
-    prompt = "Sunset over the sea."
+    prompt = "A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about." # "Sunset over the sea."
     # seed=-1 means random seed. >0 means fixed seed.
     video = engine.generate(
         prompt=prompt,
         guidance_scale=7.5,
         num_inference_steps=100,
-        seed=-1,
+        seed=1024,
+        #seed=-1,
     ).video[0]
-    engine.save_video(video, f"./outputs/{prompt}.mp4")
+    
+    import os
+    import torch
+    # Check if `video` is already a PyTorch tensor
+    if not isinstance(video, torch.Tensor):
+        # Convert to a PyTorch tensor if it's not already one
+        video = torch.tensor(video)
+    ref_video_folder = f"/home/yfeng/ygcheng/src/VideoSys/examples/open_sora_plan/assets/ref_videos"
+    # Save the video tensor to a .pt file
+
+    ref_video_path = os.path.join(ref_video_folder, "generated_video.pt")
+    torch.save(video, ref_video_path)
+
+    print(f"Video saved as {ref_video_path}")
+
+    prompt_suffix = prompt[:15] if len(prompt) > 15 else prompt
+    engine.save_video(video, f"./outputs/{prompt_suffix}.mp4")
 
 
 def run_low_mem():

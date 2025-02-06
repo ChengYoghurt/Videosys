@@ -20,7 +20,7 @@ import torch.distributed as dist
 import tqdm
 from bs4 import BeautifulSoup
 from diffusers.models import AutoencoderKL, Transformer2DModel
-from diffusers.schedulers import EulerAncestralDiscreteScheduler, PNDMScheduler
+from diffusers.schedulers import EulerAncestralDiscreteScheduler, PNDMScheduler, DDIMScheduler
 from diffusers.utils.torch_utils import randn_tensor
 from transformers import AutoTokenizer, MT5EncoderModel, T5EncoderModel, T5Tokenizer
 
@@ -204,7 +204,7 @@ class OpenSoraPlanConfig:
             text_encoder_default = "DeepFloyd/t5-v1_1-xxl"
         elif version == "v120":
             transformer_default = "LanguageBind/Open-Sora-Plan-v1.2.0"
-            text_encoder_default = "google/mt5-xxl"
+            text_encoder_default = "/home/yfeng/.cache/videosys/google_mt5_xxl" # "google/mt5-xxl"
         self.text_encoder = text_encoder or text_encoder_default
         self.transformer = transformer or transformer_default
 
@@ -303,7 +303,7 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
             if config.version == "v110":
                 scheduler = PNDMScheduler()
             elif config.version == "v120":
-                scheduler = EulerAncestralDiscreteScheduler()
+                scheduler = EulerAncestralDiscreteScheduler() # PNDMScheduler() # DDIMScheduler() # TODO
 
         # setting
         if config.enable_tiling:
@@ -932,6 +932,7 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
         enable_temporal_attentions: bool = True,
         verbose: bool = True,
         max_sequence_length: int = 512,
+        ea_timesteps: Optional[List[float]] = None,
     ) -> Union[VideoSysPipelineOutput, Tuple]:
         """
         Function invoked when calling the pipeline for generation.
@@ -1075,12 +1076,17 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
                 prompt_attention_mask = torch.cat([negative_prompt_attention_mask, prompt_attention_mask], dim=0)
 
         # 4. Prepare timesteps
-        if self._config.version == "v110":
-            self.scheduler.set_timesteps(num_inference_steps, device=device)
-            timesteps = self.scheduler.timesteps
+        # TODO: Add ea_timesteps
+        if ea_timesteps is not None:
+            num_inference_steps = len(ea_timesteps)
+            timesteps = ea_timesteps
         else:
-            timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device, None)
-
+            if self._config.version == "v110":
+                self.scheduler.set_timesteps(num_inference_steps, device=device)
+                timesteps = self.scheduler.timesteps
+            else:
+                timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device, None)
+            print(f"osp retrieve_timesteps: {timesteps}")
         # 5. Prepare latents.
         latent_channels = self.transformer.config.in_channels
         latents = self.prepare_latents(
