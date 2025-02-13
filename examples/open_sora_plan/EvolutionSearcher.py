@@ -52,16 +52,15 @@ choice = lambda x: x[np.random.randint(len(x))] if isinstance(
 # safety_checker = StableDiffusionSafetyChecker.from_pretrained(safety_model_id)
 
 prompts = [
-    "a black dog wearing halloween costume", # animal
-    "an apartment building with balcony", # archi
-    "freshly baked finger looking cookies", # food
-    "people carving a pumpkin", # human
-    "scenic video of sunset", # scenery
+    "a muffin with a burning candle and a love sign by a ceramic mug", # food
+    "a group of friend place doing hand gestures of agreement", # human
+    "aerial view of snow piles", # scenery
+    "yacht sailing through the ocean", # vehicle
 ]
 
 def load_ref_videos(ref_videos_folder):
     ref_videos = []
-    for i in range(5):
+    for i in range(4):
         video_path = os.path.join(ref_videos_folder, f"{i}.pt")
         video = torch.load(video_path)
         video_normalized = video.float() / 255.0
