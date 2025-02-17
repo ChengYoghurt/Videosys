@@ -20,7 +20,7 @@ import torch.distributed as dist
 import tqdm
 from bs4 import BeautifulSoup
 from diffusers.models import AutoencoderKL, Transformer2DModel
-from diffusers.schedulers import EulerAncestralDiscreteScheduler, PNDMScheduler
+from diffusers.schedulers import EulerAncestralDiscreteScheduler, PNDMScheduler, DDIMScheduler
 from diffusers.utils.torch_utils import randn_tensor
 from transformers import AutoTokenizer, MT5EncoderModel, T5EncoderModel, T5Tokenizer
 
@@ -171,7 +171,7 @@ class OpenSoraPlanConfig:
     def __init__(
         self,
         version: str = "v120",
-        transformer_type: str = "29x480p",
+        transformer_type: str = "29x480p", # "93x480p",
         transformer: str = None,
         text_encoder: str = None,
         # ======= distributed ========
@@ -204,7 +204,7 @@ class OpenSoraPlanConfig:
             text_encoder_default = "DeepFloyd/t5-v1_1-xxl"
         elif version == "v120":
             transformer_default = "LanguageBind/Open-Sora-Plan-v1.2.0"
-            text_encoder_default = "google/mt5-xxl"
+            text_encoder_default = "/home/yfeng/.cache/videosys/google_mt5_xxl" # "google/mt5-xxl"
         self.text_encoder = text_encoder or text_encoder_default
         self.transformer = transformer or transformer_default
 
@@ -303,7 +303,7 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
             if config.version == "v110":
                 scheduler = PNDMScheduler()
             elif config.version == "v120":
-                scheduler = EulerAncestralDiscreteScheduler()
+                scheduler = EulerAncestralDiscreteScheduler() # PNDMScheduler() # DDIMScheduler() # TODO
 
         # setting
         if config.enable_tiling:
@@ -932,6 +932,7 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
         enable_temporal_attentions: bool = True,
         verbose: bool = True,
         max_sequence_length: int = 512,
+        ea_timesteps: Optional[List[float]] = None,
     ) -> Union[VideoSysPipelineOutput, Tuple]:
         """
         Function invoked when calling the pipeline for generation.
@@ -1006,6 +1007,7 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
         height = self.transformer.config.sample_size[0] * self.vae.vae_scale_factor[1]
         width = self.transformer.config.sample_size[1] * self.vae.vae_scale_factor[2]
         num_frames = self._config.num_frames
+
         update_steps(num_inference_steps)
         self.check_inputs(
             prompt,
@@ -1079,7 +1081,8 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
             self.scheduler.set_timesteps(num_inference_steps, device=device)
             timesteps = self.scheduler.timesteps
         else:
-            timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device, None)
+            # scheduler._step_index will be rest when set_timesteps is called
+            timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device, ea_timesteps)
 
         # 5. Prepare latents.
         latent_channels = self.transformer.config.in_channels
@@ -1198,7 +1201,7 @@ def retrieve_timesteps(
     scheduler,
     num_inference_steps: Optional[int] = None,
     device: Optional[Union[str, torch.device]] = None,
-    timesteps: Optional[List[int]] = None,
+    timesteps: Optional[List[float]] = None,# Optional[List[int]] = None,
     **kwargs,
 ):
     """
@@ -1222,14 +1225,15 @@ def retrieve_timesteps(
         `Tuple[torch.Tensor, int]`: A tuple where the first element is the timestep schedule from the scheduler and the
         second element is the number of inference steps.
     """
+    # TODO: Consider timesteps as ea_timesteps and do not raise error
     if timesteps is not None:
-        accepts_timesteps = "timesteps" in set(inspect.signature(scheduler.set_timesteps).parameters.keys())
-        if not accepts_timesteps:
-            raise ValueError(
-                f"The current scheduler class {scheduler.__class__}'s `set_timesteps` does not support custom"
-                f" timestep schedules. Please check whether you are using the correct scheduler."
-            )
-        scheduler.set_timesteps(timesteps=timesteps, device=device, **kwargs)
+        # accepts_timesteps = "timesteps" in set(inspect.signature(scheduler.set_timesteps).parameters.keys())
+        # if not accepts_timesteps:
+        #     raise ValueError(
+        #         f"The current scheduler class {scheduler.__class__}'s `set_timesteps` does not support custom"
+        #         f" timestep schedules. Please check whether you are using the correct scheduler."
+        #     )
+        scheduler.set_timesteps(num_inference_steps, device=device, ea_timesteps=timesteps, **kwargs)
         timesteps = scheduler.timesteps
         num_inference_steps = len(timesteps)
     else:
