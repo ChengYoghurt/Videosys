@@ -1007,6 +1007,7 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
         height = self.transformer.config.sample_size[0] * self.vae.vae_scale_factor[1]
         width = self.transformer.config.sample_size[1] * self.vae.vae_scale_factor[2]
         num_frames = self._config.num_frames
+
         update_steps(num_inference_steps)
         self.check_inputs(
             prompt,
@@ -1080,6 +1081,7 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
             self.scheduler.set_timesteps(num_inference_steps, device=device)
             timesteps = self.scheduler.timesteps
         else:
+            # scheduler._step_index will be rest when set_timesteps is called
             timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device, ea_timesteps)
 
         # 5. Prepare latents.
