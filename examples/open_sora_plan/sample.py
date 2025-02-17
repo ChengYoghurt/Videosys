@@ -27,13 +27,13 @@ def run_base():
     # Load prompts from the given file
     prompt_file_path = "/home/yfeng/ygcheng/src/Open-Sora/assets/texts/t2v_sora.txt"
     prompts = load_prompts_from_file(prompt_file_path)
-    save_videos_dir = "./outputs/sora_org_4s"
+    save_videos_dir = "./outputs/sora_org_s40_4s"
     os.makedirs(save_videos_dir, exist_ok=True)
     for i, prompt in enumerate(prompts):
         video = engine.generate(
             prompt=prompt,
             guidance_scale=7.5,
-            num_inference_steps=100,
+            num_inference_steps=40,
             seed=1024,
         ).video[0]
 

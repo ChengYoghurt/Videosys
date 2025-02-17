@@ -48,12 +48,12 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
     with open(prompt_file_path, "r") as f:
         prompts = [line.strip() for line in f.readlines()]
 
-    for i, prompt in enumerate(selected_prompts):
+    for i, prompt in enumerate(prompts):
 
         if load_ea_timesteps:
             import yaml
             # Load YAML file
-            ea_timesteps_path = "/home/yfeng/ygcheng/src/VideoSys/examples/open_sora_plan/outputs/93x480p_step50_search100_category/ea_timesteps.yaml"
+            ea_timesteps_path = "/home/yfeng/ygcheng/src/VideoSys/examples/open_sora_plan/outputs/93x480p_step40_search100_category/ea_timesteps.yaml"
             with open(ea_timesteps_path, "r") as file:
                 ea = yaml.safe_load(file)  # Use safe_load to avoid execution risks
 
@@ -103,5 +103,5 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
 
 
 if __name__ == "__main__":
-    run_base(save_ref_videos=True, load_ea_timesteps=False)
+    run_base(save_ref_videos=False, load_ea_timesteps=True)
 
