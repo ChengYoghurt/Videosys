@@ -1082,7 +1082,8 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
             timesteps = self.scheduler.timesteps
         else:
             # scheduler._step_index will be rest when set_timesteps is called
-            timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device, ea_timesteps)
+            # timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device, ea_timesteps)
+            timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device, None)
 
         # 5. Prepare latents.
         latent_channels = self.transformer.config.in_channels
@@ -1237,6 +1238,6 @@ def retrieve_timesteps(
         timesteps = scheduler.timesteps
         num_inference_steps = len(timesteps)
     else:
-        scheduler.set_timesteps(num_inference_steps, device=device, **kwargs)
+        scheduler.set_timesteps(num_inference_steps, device=device, **kwargs) # ea_timesteps=None
         timesteps = scheduler.timesteps
     return timesteps, num_inference_steps

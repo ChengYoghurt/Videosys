@@ -17,7 +17,7 @@ def run_base():
     # open-sora-plan v1.2.0
     # transformer_type (len, res): 93x480p 93x720p 29x480p 29x720p
     # change num_gpus for multi-gpu inference
-    config = OpenSoraPlanConfig(version="v120", transformer_type="93x480p", num_gpus=1)
+    config = OpenSoraPlanConfig(version="v120", transformer_type="29x720p", num_gpus=1)
     engine = VideoSysEngine(config)
 
     import os
@@ -27,13 +27,13 @@ def run_base():
     # Load prompts from the given file
     prompt_file_path = "/home/yfeng/ygcheng/src/Open-Sora/assets/texts/t2v_sora.txt"
     prompts = load_prompts_from_file(prompt_file_path)
-    save_videos_dir = "./outputs/sora_org_s40_4s"
+    save_videos_dir = "./outputs/sora_org_s50_29x720p"
     os.makedirs(save_videos_dir, exist_ok=True)
     for i, prompt in enumerate(prompts):
         video = engine.generate(
             prompt=prompt,
             guidance_scale=7.5,
-            num_inference_steps=40,
+            num_inference_steps=50,
             seed=1024,
         ).video[0]
 
