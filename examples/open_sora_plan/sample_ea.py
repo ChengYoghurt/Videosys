@@ -38,19 +38,19 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
     engine = VideoSysEngine(config)
 
     ea_timesteps_list = []
-    # prompt = "A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about." # "Sunset over the sea."
+    prompts = ["A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about.", "Sunset over the sea."]
     # seed=-1 means random seed. >0 means fixed seed.
     # File path
     # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_dimension_append1.txt"
-    prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_dimension.txt"
+    # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_dimension.txt"
     # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/vbench_200/extracted_prompts_200.txt"
     # prompt_file_path = "/home/yfeng/ygcheng/src/Open-Sora/assets/texts/t2v_sora.txt"
     # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_category.txt"
 
-    # Read all prompts
-    with open(prompt_file_path, "r") as f:
-        prompts = [line.strip() for line in f.readlines()]
-        # prompts = [line.strip() for i, line in enumerate(f.readlines()) if i % 16 == 0]
+    # # Read all prompts
+    # with open(prompt_file_path, "r") as f:
+    #     prompts = [line.strip() for line in f.readlines()]
+    #     # prompts = [line.strip() for i, line in enumerate(f.readlines()) if i % 16 == 0]
 
     for i, prompt in enumerate(prompts):
 
@@ -70,7 +70,7 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
             ea_path = Path(ea_timesteps_path)
 
             # Construct new folder path
-            videos_folder = ea_path.parent / "videos_vb900"
+            videos_folder = ea_path.parent / "videos_test"
 
             # Create the folder if it doesn't exist
             videos_folder.mkdir(parents=True, exist_ok=True)
@@ -113,5 +113,5 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
 
 
 if __name__ == "__main__":
-    run_base(save_ref_videos=False, load_ea_timesteps=False)
+    run_base(save_ref_videos=False, load_ea_timesteps=True)
 
