@@ -194,7 +194,7 @@ def main():
     # ======================================================
     # Integrate Open-Sora-Plan Configurations
     # ======================================================
-    config = OpenSoraPlanConfig(version="v120", transformer_type="29x480p", num_gpus=1)
+    config = OpenSoraPlanConfig(version="v120", transformer_type="93x480p", num_gpus=1)
     engine = VideoSysEngine(config)
     print("engine initialized")
 

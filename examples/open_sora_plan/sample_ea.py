@@ -38,26 +38,26 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
     engine = VideoSysEngine(config)
 
     ea_timesteps_list = []
-    prompts = ["A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about.", "Sunset over the sea."]
+    # prompts = ["A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about.", "Sunset over the sea."]
     # seed=-1 means random seed. >0 means fixed seed.
     # File path
-    # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_dimension_append1.txt"
+    prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_dimension_part3.txt"
     # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_dimension.txt"
     # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/vbench_200/extracted_prompts_200.txt"
     # prompt_file_path = "/home/yfeng/ygcheng/src/Open-Sora/assets/texts/t2v_sora.txt"
     # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_category.txt"
 
-    # # Read all prompts
-    # with open(prompt_file_path, "r") as f:
-    #     prompts = [line.strip() for line in f.readlines()]
-    #     # prompts = [line.strip() for i, line in enumerate(f.readlines()) if i % 16 == 0]
+    # Read all prompts
+    with open(prompt_file_path, "r") as f:
+        prompts = [line.strip() for line in f.readlines()]
+        # prompts = [line.strip() for i, line in enumerate(f.readlines()) if i % 16 == 0]
 
     for i, prompt in enumerate(prompts):
 
         if load_ea_timesteps:
             import yaml
             # Load YAML file
-            ea_timesteps_path = "examples/open_sora_plan/outputs/29x480p_step70_search100_category/ea_timesteps.yaml"
+            ea_timesteps_path = "examples/open_sora_plan/outputs/29x480p_step50_search100_cache/ea_timesteps.yaml"
             with open(ea_timesteps_path, "r") as file:
                 ea = yaml.safe_load(file)  # Use safe_load to avoid execution risks
 
@@ -83,7 +83,9 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
                     ea_timesteps=ea_timesteps
                 ).video[0]
                 
-                video_filename = f"{prompt}.mp4"  # Format index as 4 digits (e.g., 0000, 0001, etc.)
+                # TODO: modify save name
+                # prompt_prefix = prompt[:20]
+                video_filename = f"{prompt}.mp4"  # TODO
                 video_save_path = os.path.join(videos_folder, video_filename)
                 engine.save_video(video, video_save_path)
                 print(f"Saved video with EA timesteps to {video_save_path}")

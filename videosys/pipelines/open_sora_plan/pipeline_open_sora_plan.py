@@ -1140,7 +1140,7 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
             attention_mask = torch.ones_like(latent_model_input)[:, 0]
 
             # Check if the current timestep is in ea_timesteps
-            if t in ea_timesteps:
+            if latest_pred_noise is None or t in ea_timesteps:
                 # predict noise model_output using self.transformer
                 noise_pred = self.transformer(
                     latent_model_input,
