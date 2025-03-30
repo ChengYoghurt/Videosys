@@ -203,8 +203,8 @@ class OpenSoraPlanConfig:
             transformer_default = "LanguageBind/Open-Sora-Plan-v1.1.0"
             text_encoder_default = "DeepFloyd/t5-v1_1-xxl"
         elif version == "v120":
-            transformer_default = "LanguageBind/Open-Sora-Plan-v1.2.0"
-            text_encoder_default = "/home/yfeng/.cache/videosys/google_mt5_xxl" # "google/mt5-xxl"
+            transformer_default = "/data/models/opensoraplan/models--LanguageBind--Open-Sora-Plan-v1.2.0/snapshots/706e1c0e3635cd4f89b29169f30c3bb90c70756c" # "LanguageBind/Open-Sora-Plan-v1.2.0"
+            text_encoder_default = "/data/models/google_mt5_xxl" # "google/mt5-xxl"
         self.text_encoder = text_encoder or text_encoder_default
         self.transformer = transformer or transformer_default
 
@@ -287,8 +287,9 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
             if config.version == "v110":
                 vae = CausalVAEModelWrapperV110(config.transformer, subfolder="vae").to(dtype=dtype)
             elif config.version == "v120":
-                vae = CausalVAEModelWrapperV120(config.transformer, subfolder="vae").to(dtype=dtype)
-
+                vae = CausalVAEModelWrapperV120("/data/models/opensoraplan/models--LanguageBind--Open-Sora-Plan-v1.2.0/snapshots/706e1c0e3635cd4f89b29169f30c3bb90c70756c/vae",
+                        subfolder="vae").to(dtype=dtype)
+                
         if transformer is None:
             if config.version == "v110":
                 transformer = LatteT2V.from_pretrained(
@@ -296,7 +297,8 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
                 )
             elif config.version == "v120":
                 transformer = OpenSoraT2V.from_pretrained(
-                    config.transformer, subfolder=config.transformer_type, torch_dtype=dtype
+                    "/data/models/opensoraplan/models--LanguageBind--Open-Sora-Plan-v1.2.0/snapshots/706e1c0e3635cd4f89b29169f30c3bb90c70756c",
+                    subfolder=config.transformer_type, torch_dtype=dtype
                 )
 
         if scheduler is None:
