@@ -1,5 +1,4 @@
 from videosys import OpenSoraPlanConfig, VideoSysEngine
-
 prompts_1s = [
     "a black dog wearing halloween costume", # animal
     "an apartment building with balcony", # archi
@@ -10,7 +9,7 @@ prompts_1s = [
 
 prompts_4s = [
     "a muffin with a burning candle and a love sign by a ceramic mug", # food
-    "a group of friend place doing hand gestures of agreement", # human
+    "a group of friend place doing hand gestures of agreement", # humannvi
     "aerial view of snow piles", # scenery
     "yacht sailing through the ocean", # vehicle
 ]
@@ -22,9 +21,10 @@ def save_ref_video(video, i, prompt, engine):
     if not isinstance(video, torch.Tensor):
         # Convert to a PyTorch tensor if it's not already one
         video = torch.tensor(video)
-    ref_video_folder = f"examples/open_sora_plan/assets/93x480p"
-    # Save the video tensor to a .pt file
+    ref_video_folder = f"examples/open_sora_plan/assets/ref_videos_1s"
+    os.makedirs(ref_video_folder, exist_ok=True)
 
+    # Save the video tensor to a .pt file
     ref_video_path = os.path.join(ref_video_folder, f"{i}.pt")
     torch.save(video, ref_video_path)
 
@@ -41,11 +41,9 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
     # prompts = ["A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about.", "Sunset over the sea."]
     # seed=-1 means random seed. >0 means fixed seed.
     # File path
-    prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_dimension_part3.txt"
-    # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_dimension.txt"
-    # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/vbench_200/extracted_prompts_200.txt"
-    # prompt_file_path = "/home/yfeng/ygcheng/src/Open-Sora/assets/texts/t2v_sora.txt"
-    # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_category.txt"
+    prompt_file_path = "/home/yuge/src/Vbench/prompts/all_dimension_3.txt"
+    # prompt_file_path = "examples/open_sora_plan/assets/texts/vbench_200/extracted_prompts_200.txt"
+    # prompt_file_path = "examples/open_sora_plan/assets/texts/t2v_sora.txt"
 
     # Read all prompts
     with open(prompt_file_path, "r") as f:
@@ -57,7 +55,7 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
         if load_ea_timesteps:
             import yaml
             # Load YAML file
-            ea_timesteps_path = "examples/open_sora_plan/outputs/29x480p_step50_search100_cache/ea_timesteps.yaml"
+            ea_timesteps_path = "examples/open_sora_plan/outputs/93x480p_step70_search100_category/ea_timesteps.yaml"
             with open(ea_timesteps_path, "r") as file:
                 ea = yaml.safe_load(file)  # Use safe_load to avoid execution risks
 
@@ -70,7 +68,7 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
             ea_path = Path(ea_timesteps_path)
 
             # Construct new folder path
-            videos_folder = ea_path.parent / "videos_test"
+            videos_folder = ea_path.parent / "videos_vb900"
 
             # Create the folder if it doesn't exist
             videos_folder.mkdir(parents=True, exist_ok=True)
@@ -83,9 +81,7 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
                     ea_timesteps=ea_timesteps
                 ).video[0]
                 
-                # TODO: modify save name
-                # prompt_prefix = prompt[:20]
-                video_filename = f"{prompt}.mp4"  # TODO
+                video_filename = f"{prompt}.mp4"  # Format index as 4 digits (e.g., 0000, 0001, etc.)
                 video_save_path = os.path.join(videos_folder, video_filename)
                 engine.save_video(video, video_save_path)
                 print(f"Saved video with EA timesteps to {video_save_path}")
@@ -102,14 +98,8 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
                 print(f"Saving reference video {i} for prompt '{prompt}'")
                 save_ref_video(video, i, prompt, engine)
 
-            import os
-            video_filename = f"{prompt}.mp4"
-            videos_folder = f"./outputs/sora_org_29x480p_vb900"
-            # prompt_suffix = prompt[:20] if len(prompt) > 20 else prompt
-            # engine.save_video(video, f"./outputs/category_93x480p_org/{prompt_suffix}.mp4")
-            video_save_path = os.path.join(videos_folder, video_filename)
-            engine.save_video(video, video_save_path)
-            
+            prompt_suffix = prompt[:20] if len(prompt) > 20 else prompt
+            engine.save_video(video, f"./outputs/category_1s_org_osp120/{prompt_suffix}.mp4")
 
 
 

@@ -224,6 +224,7 @@ def main():
     logging.info("Integrated Open-Sora-Plan Successfully ......")
 
     searcher.search()
+
     logging.info('total searching time = {:.2f} hours'.format((time.time() - t) / 3600))
 
 if __name__ == '__main__':

@@ -48,7 +48,7 @@ def get_cand_mse(cand, engine, ref_videos, output_dir, device='cuda'):
 
         # == save the cand video ==
         video_filename = f"{prompt}.mp4"
-        videos_folder = f"{output_dir}/mse_cand_videos"
+        videos_folder = output_dir / "mse_cand_videos"
         videos_folder.mkdir(parents=True, exist_ok=True)
         video_save_path = os.path.join(videos_folder, video_filename)
         engine.save_video(video, video_save_path)

@@ -1,6 +1,8 @@
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
-CUDA_VISIBLE_DEVICES=0 \
+
+CUDA_VISIBLE_DEVICES=1 \
 python examples/open_sora_plan/search_ea.py \
+<<<<<<< Updated upstream
 --outdir 'examples/open_sora_plan/outputs/93x480p_step50_search100_cache' \
 --n_samples 6 \
 --num_sample 1000 \
@@ -9,7 +11,17 @@ python examples/open_sora_plan/search_ea.py \
 --population_num 50 \
 --mutation_num 20 \
 --crossover_num 15 \
+=======
+--outdir 'examples/open_sora_plan/outputs/93x480p_step80_search100_category' \
+--n_samples 6 \
+--num_sample 1000 \
+--time_step 80 \
+--max_epochs 10 \
+--population_num 10 \
+--mutation_num 5 \
+--crossover_num 2 \
+>>>>>>> Stashed changes
 --seed 1024 \
 --use_ddim_init_x false \
---ref_videos '/home/yfeng/ygcheng/src/VideoSys/examples/open_sora_plan/assets/ref_videos_4s' \
+--ref_videos 'examples/open_sora_plan/assets/ref_videos_4s' \
 --ref_sigma '/home/yfeng/ygcheng/src/AutoDiffusion/assets/coco2014_sigma.npy' \
