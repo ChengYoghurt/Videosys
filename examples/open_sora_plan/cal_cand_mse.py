@@ -51,7 +51,7 @@ def get_cand_mse(cand, engine, ref_videos, output_dir, device='cuda'):
         videos_folder = output_dir / "mse_cand_videos"
         videos_folder.mkdir(parents=True, exist_ok=True)
         video_save_path = os.path.join(videos_folder, video_filename)
-        engine.save_video(video, video_save_path)
+        engine.save_video(cand_video, video_save_path)
         print(f"Saved video with EA timesteps to {video_save_path}")
     
     mean_mse = np.mean(mse_scores)
