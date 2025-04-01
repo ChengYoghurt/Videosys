@@ -1,6 +1,7 @@
-from videosys import OpenSoraPlanConfig, VideoSysEngine
+from videosys import OpenSoraConfig, VideoSysEngine
 import argparse
-
+import os
+import torch
 # prompts_1s = [
 #     "a black dog wearing halloween costume", # animal
 #     "an apartment building with balcony", # archi
@@ -23,7 +24,7 @@ def save_ref_video(video, i, prompt):
     if not isinstance(video, torch.Tensor):
         # Convert to a PyTorch tensor if it's not already one
         video = torch.tensor(video)
-    ref_video_folder = f"examples/open_sora_plan/assets/93x480p"
+    ref_video_folder = f"examples/open_sora/assets/2sx480p"
     # Save the video tensor to a .pt file
     os.makedirs(ref_video_folder, exist_ok=True)
     ref_video_path = os.path.join(ref_video_folder, f"{i}.pt")
@@ -36,7 +37,7 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
     # open-sora-plan v1.2.0
     # transformer_type (len, res): 93x480p 93x720p 29x480p 29x720p
     # change num_gpus for multi-gpu inference
-    config = OpenSoraPlanConfig(version="v120", transformer_type="93x480p", num_gpus=1)
+    config = OpenSoraConfig(num_sampling_steps=30, cfg_scale=7.0, num_gpus=1)
     engine = VideoSysEngine(config)
 
     ea_timesteps_list = []
@@ -52,7 +53,9 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
     # with open(prompt_file_path, "r") as f:
     #     prompts = [line.strip() for line in f.readlines()]
     #     # prompts = [line.strip() for i, line in enumerate(f.readlines()) if i % 16 == 0]
-
+    import os
+    save_videos_dir = "./outputs/os/2sx480p/ea_ref"
+    os.makedirs(save_videos_dir, exist_ok=True)
     for i, prompt in enumerate(prompts_4s):
 
         if load_ea_timesteps:
@@ -78,34 +81,31 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
             for idx, ea_timesteps in enumerate(ea_timesteps_list):
                 video = engine.generate(
                     prompt=prompt,
-                    guidance_scale=7.5,
-                    num_inference_steps=100,
-                    seed=1024,
-                    ea_timesteps=ea_timesteps
+                    resolution="480p",
+                    aspect_ratio="9:16",
+                    num_frames="2s",
+                    seed=1024# -1,
                 ).video[0]
-                
-                # TODO: modify save name
-                # prompt_prefix = prompt[:20]
-                video_filename = f"{prompt}.mp4"  # TODO
-                video_save_path = os.path.join(videos_folder, video_filename)
-                engine.save_video(video, video_save_path)
+                video_filename = f"{prompt}.mp4"  # Format index as 4 digits (e.g., 0000, 0001, etc.)
+                save_path = os.path.join(save_videos_dir, video_filename)
+                engine.save_video(video, save_path)
                 print(f"Saved video with EA timesteps to {video_save_path}")
         else:
             print("Generating videos WITHOUT EA...")
             video = engine.generate(
                 prompt=prompt,
-                guidance_scale=7.5,
-                num_inference_steps=100,
-                seed=1024,
+                resolution="480p",
+                aspect_ratio="9:16",
+                num_frames="2s",
+                seed=1024# -1,
             ).video[0]
 
             if save_ref_videos:
                 print(f"Saving reference video {i} for prompt '{prompt}'")
                 save_ref_video(video, i, prompt)
 
-            import os
             video_filename = f"{prompt}.mp4"
-            videos_folder = f"./outputs/osp/93x480p_ref"
+            videos_folder = f"./outputs/os/2sx480p_ref"
             # prompt_suffix = prompt[:20] if len(prompt) > 20 else prompt
             # engine.save_video(video, f"./outputs/category_93x480p_org/{prompt_suffix}.mp4")
             video_save_path = os.path.join(videos_folder, video_filename)
@@ -129,5 +129,3 @@ if __name__ == "__main__":
     # Call the function with parsed arguments
     run_base(save_ref_videos=args.save_ref_videos, 
              load_ea_timesteps=args.load_ea_timesteps)
-
-
