@@ -1083,7 +1083,8 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
             timesteps = self.scheduler.timesteps
         else:
             # scheduler._step_index will be rest when set_timesteps is called
-            timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device, ea_timesteps)
+            # timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device, ea_timesteps)
+            timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device, None)
 
         # 5. Prepare latents.
         latent_channels = self.transformer.config.in_channels
@@ -1108,6 +1109,8 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
         # 7. Denoising loop
         num_warmup_steps = max(len(timesteps) - num_inference_steps * self.scheduler.order, 0)
 
+        # Initialize a variable to cache the latest pred_noise
+        latest_pred_noise = None
         progress_wrap = tqdm.tqdm if verbose and dist.get_rank() == 0 else (lambda x: x)
         for i, t in progress_wrap(list(enumerate(timesteps))):
             latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
@@ -1137,18 +1140,26 @@ class OpenSoraPlanPipeline(VideoSysPipeline):
             # b c t h w -> b t h w
             attention_mask = torch.ones_like(latent_model_input)[:, 0]
 
-            # predict noise model_output
-            noise_pred = self.transformer(
-                latent_model_input,
-                all_timesteps=timesteps,
-                encoder_hidden_states=prompt_embeds,
-                timestep=current_timestep,
-                added_cond_kwargs=added_cond_kwargs,
-                enable_temporal_attentions=enable_temporal_attentions,
-                attention_mask=attention_mask,
-                encoder_attention_mask=prompt_attention_mask,
-                return_dict=False,
-            )[0]
+            # Check if the current timestep is in ea_timesteps
+            if latest_pred_noise is None or t in ea_timesteps:
+                # predict noise model_output using self.transformer
+                noise_pred = self.transformer(
+                    latent_model_input,
+                    all_timesteps=timesteps,
+                    encoder_hidden_states=prompt_embeds,
+                    timestep=current_timestep,
+                    added_cond_kwargs=added_cond_kwargs,
+                    enable_temporal_attentions=enable_temporal_attentions,
+                    attention_mask=attention_mask,
+                    encoder_attention_mask=prompt_attention_mask,
+                    return_dict=False,
+                )[0]
+
+                # Cache the latest pred_noise
+                latest_pred_noise = noise_pred
+            else:
+                # Use the latest cached pred_noise
+                noise_pred = latest_pred_noise
 
             # perform guidance
             if do_classifier_free_guidance:
@@ -1238,6 +1249,6 @@ def retrieve_timesteps(
         timesteps = scheduler.timesteps
         num_inference_steps = len(timesteps)
     else:
-        scheduler.set_timesteps(num_inference_steps, device=device, **kwargs)
+        scheduler.set_timesteps(num_inference_steps, device=device, **kwargs) # ea_timesteps=None
         timesteps = scheduler.timesteps
     return timesteps, num_inference_steps
