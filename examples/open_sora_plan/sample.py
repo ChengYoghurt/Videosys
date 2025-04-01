@@ -25,15 +25,15 @@ def run_base():
     # prompt = "A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about." # "Sunset over the sea."
     # seed=-1 means random seed. >0 means fixed seed.
     # Load prompts from the given file
-    prompt_file_path = "/home/yfeng/ygcheng/src/Open-Sora/assets/texts/t2v_sora.txt"
+    prompt_file_path = "/home/yuge/src/Vbench/prompts/all_dimension.txt"
     prompts = load_prompts_from_file(prompt_file_path)
-    save_videos_dir = "./outputs/sora_org_s40_4s"
+    save_videos_dir = "./outputs/vb900/93x480p"
     os.makedirs(save_videos_dir, exist_ok=True)
     for i, prompt in enumerate(prompts):
         video = engine.generate(
             prompt=prompt,
             guidance_scale=7.5,
-            num_inference_steps=40,
+            num_inference_steps=100,
             seed=1024,
         ).video[0]
 
@@ -51,7 +51,7 @@ def run_base():
 
         # prompt_suffix = prompt[:20] if len(prompt) > 20 else prompt
         # engine.save_video(video, f"./outputs/{prompt_suffix}.mp4")
-        video_filename = f"{i:04d}.mp4"  # Format index as 4 digits (e.g., 0000, 0001, etc.)
+        video_filename = f"{prompt}.mp4"  # Format index as 4 digits (e.g., 0000, 0001, etc.)
         save_path = os.path.join(save_videos_dir, video_filename)
         engine.save_video(video, save_path)
 

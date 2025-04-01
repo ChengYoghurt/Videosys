@@ -125,9 +125,9 @@ class OpenSoraConfig:
 
     def __init__(
         self,
-        transformer: str = "hpcai-tech/OpenSora-STDiT-v3",
-        vae: str = "hpcai-tech/OpenSora-VAE-v1.2",
-        text_encoder: str = "DeepFloyd/t5-v1_1-xxl",
+        transformer: str = "/data/models/opensora/opensora-stdit-v3", # "hpcai-tech/OpenSora-STDiT-v3",
+        vae: str = "/data/models/opensora/opensora-vae-v1.2", # "hpcai-tech/OpenSora-VAE-v1.2",
+        text_encoder: str = "/data/models/t5-v1_1-xxl", # "DeepFloyd/t5-v1_1-xxl",
         # ======== distributed ========
         num_gpus: int = 1,
         # ======== scheduler ========
