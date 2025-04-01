@@ -24,7 +24,7 @@ def save_ref_video(video, i, prompt):
     if not isinstance(video, torch.Tensor):
         # Convert to a PyTorch tensor if it's not already one
         video = torch.tensor(video)
-    ref_video_folder = f"examples/open_sora/assets/2sx480p"
+    ref_video_folder = f"examples/open_sora/assets/4sx480p"
     # Save the video tensor to a .pt file
     os.makedirs(ref_video_folder, exist_ok=True)
     ref_video_path = os.path.join(ref_video_folder, f"{i}.pt")
@@ -41,7 +41,7 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
     engine = VideoSysEngine(config)
 
     ea_timesteps_list = []
-    # prompts = ["A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about.", "Sunset over the sea."]
+    prompts = ["In a still frame, a stop sign",]
     # seed=-1 means random seed. >0 means fixed seed.
     # File path
     # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_dimension.txt"
@@ -54,9 +54,9 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
     #     prompts = [line.strip() for line in f.readlines()]
     #     # prompts = [line.strip() for i, line in enumerate(f.readlines()) if i % 16 == 0]
     import os
-    save_videos_dir = "./outputs/os/2sx480p/ea_ref"
+    save_videos_dir = "./outputs/os"
     os.makedirs(save_videos_dir, exist_ok=True)
-    for i, prompt in enumerate(prompts_4s):
+    for i, prompt in enumerate(prompts):
 
         if load_ea_timesteps:
             import yaml
@@ -105,16 +105,9 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
                 save_ref_video(video, i, prompt)
 
             video_filename = f"{prompt}.mp4"
-            videos_folder = f"./outputs/os/2sx480p_ref"
-            # prompt_suffix = prompt[:20] if len(prompt) > 20 else prompt
-            # engine.save_video(video, f"./outputs/category_93x480p_org/{prompt_suffix}.mp4")
-            video_save_path = os.path.join(videos_folder, video_filename)
+            video_save_path = os.path.join(save_videos_dir, video_filename)
             engine.save_video(video, video_save_path)
             
-
-
-
-
 if __name__ == "__main__":
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Run base function with customizable parameters.')
