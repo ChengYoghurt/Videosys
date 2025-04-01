@@ -3,7 +3,7 @@ import json
 import os
 import re
 import urllib.parse as ul
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, List
 
 import ftfy
 import torch
@@ -444,6 +444,7 @@ class OpenSoraPipeline(VideoSysPipeline):
         condition_frame_edit: float = 0.0,
         return_dict: bool = True,
         verbose: bool = True,
+        ea_timesteps: Optional[List[float]] = None,
     ) -> Union[VideoSysPipelineOutput, Tuple]:
         """
         Function invoked when calling the pipeline for generation.
@@ -634,6 +635,7 @@ class OpenSoraPipeline(VideoSysPipeline):
                 device=self._device,
                 progress=verbose,
                 mask=masks,
+                ea_timesteps=ea_timesteps,
             )
             samples = self.vae(samples.to(self._dtype), decode_only=True, num_frames=num_frames)
             video_clips.append(samples)
@@ -658,6 +660,60 @@ class OpenSoraPipeline(VideoSysPipeline):
     def save_video(self, video, output_path):
         save_video(video, output_path, fps=24)
 
+    def get_model_args(
+        self,
+        prompt: str,
+        resolution="480p",
+        aspect_ratio="9:16",
+        num_frames: int = 51,
+        loop: int = 1,
+        llm_refine: bool = False,
+        negative_prompt: str = "",
+        seed: int = -1,
+        ms: Optional[str] = "",
+        refs: Optional[str] = "",
+        aes: float = 6.5,
+        flow: Optional[float] = None,
+        camera_motion: Optional[float] = None,
+        condition_frame_length: int = 5,
+        align: int = 5,
+        condition_frame_edit: float = 0.0,
+        return_dict: bool = True,
+        verbose: bool = True,
+        ea_timesteps: Optional[List[float]] = None,
+    ) -> Union[VideoSysPipelineOutput, Tuple]:
+        """
+        Generate model args for timestep transform without evaluating transformer.
+
+        Returns:
+            [`~pipelines.ImagePipelineOutput`] or `tuple`:
+                If `return_dict` is `True`, [`~pipelines.ImagePipelineOutput`] is returned, otherwise a `tuple` is
+                returned where the first element is a list with the generated images
+        """
+        # == basic ==
+        fps = 24
+        image_size = get_image_size(resolution, aspect_ratio)
+        num_frames = get_num_frames(num_frames)
+        self._set_seed(seed)
+        update_steps(self._config.num_sampling_steps)
+
+        # == prepare batch prompts ==
+        batch_prompts = [prompt]
+        ms = [ms]
+        refs = [refs]
+
+        # == get json from prompts ==
+        batch_prompts, refs, ms = extract_json_from_prompts(batch_prompts, refs, ms)
+
+        # == get reference for condition ==
+        refs = collect_references_batch(refs, self.vae, image_size)
+
+        # == multi-resolution info ==
+        model_args = prepare_multi_resolution_info(
+            "OpenSora", len(batch_prompts), image_size, num_frames, fps, self._device, self._dtype
+        )
+        
+        return model_args
 
 def load_prompts(prompt_path, start_idx=None, end_idx=None):
     with open(prompt_path, "r") as f:

@@ -212,9 +212,9 @@ class RFLOW:
             if self.use_discrete_timesteps:
                 timesteps = [int(round(t)) for t in timesteps]
             timesteps = [torch.tensor([t] * z.shape[0], device=device) for t in timesteps]
-        
-        if self.use_timestep_transform:
+            if self.use_timestep_transform:
                 timesteps = [timestep_transform(t, model_args, num_timesteps=self.num_timesteps) for t in timesteps]
+
         if mask is not None:
             noise_added = torch.zeros_like(mask, dtype=torch.bool)
             noise_added = noise_added | (mask == 1)
@@ -271,4 +271,5 @@ class RFLOW:
         if self.use_timestep_transform:
             timesteps = [timestep_transform(t, additional_args, num_timesteps=self.num_timesteps) for t in timesteps]
         full_timesteps = [t.item() for t in timesteps]
+        print("get_full_timesteps=", full_timesteps)
         return full_timesteps

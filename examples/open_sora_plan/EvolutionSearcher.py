@@ -52,20 +52,20 @@ choice = lambda x: x[np.random.randint(len(x))] if isinstance(
 # safety_checker = StableDiffusionSafetyChecker.from_pretrained(safety_model_id)
 
 # 4s
-# prompts = [
-#     "a muffin with a burning candle and a love sign by a ceramic mug", # food
-#     "a group of friend place doing hand gestures of agreement", # humantmux
-#     "aerial view of snow piles", # scenery
-#     "yacht sailing through the ocean", # vehicle
-# ]
+prompts = [
+    "a muffin with a burning candle and a love sign by a ceramic mug", # food
+    "a group of friend place doing hand gestures of agreement", # humantmux
+    "aerial view of snow piles", # scenery
+    "yacht sailing through the ocean", # vehicle
+]
 
 # 1s
-prompts = [
-    "a black dog wearing halloween costume", # animal
-    "an apartment building with balcony", # archi
-    "freshly baked finger looking cookies", # food
-    "people carving a pumpkin", # human
-]
+# prompts = [
+#     "a black dog wearing halloween costume", # animal
+#     "an apartment building with balcony", # archi
+#     "freshly baked finger looking cookies", # food
+#     "people carving a pumpkin", # human
+# ]
 
 # 29x720p
 # prompts = [
