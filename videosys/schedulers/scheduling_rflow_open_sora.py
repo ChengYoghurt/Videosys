@@ -194,6 +194,7 @@ class RFLOW:
         device,
         mask=None,
         guidance_scale=None,
+        ea_timesteps=None,
         progress=True,
         verbose=False,
     ):
@@ -203,15 +204,17 @@ class RFLOW:
 
         # text encoding
         model_args["y"] = torch.cat([model_args["y"], y_null], 0)
-
-        # prepare timesteps
-        timesteps = [(1.0 - i / self.num_sampling_steps) * self.num_timesteps for i in range(self.num_sampling_steps)]
-        if self.use_discrete_timesteps:
-            timesteps = [int(round(t)) for t in timesteps]
-        timesteps = [torch.tensor([t] * z.shape[0], device=device) for t in timesteps]
+        # == prepare timesteps ==
+        if ea_timesteps is not None:
+            timesteps = ea_timesteps # Add ea_timesteps
+        else:
+            timesteps = [(1.0 - i / self.num_sampling_steps) * self.num_timesteps for i in range(self.num_sampling_steps)]
+            if self.use_discrete_timesteps:
+                timesteps = [int(round(t)) for t in timesteps]
+            timesteps = [torch.tensor([t] * z.shape[0], device=device) for t in timesteps]
+        
         if self.use_timestep_transform:
-            timesteps = [timestep_transform(t, model_args, num_timesteps=self.num_timesteps) for t in timesteps]
-
+                timesteps = [timestep_transform(t, model_args, num_timesteps=self.num_timesteps) for t in timesteps]
         if mask is not None:
             noise_added = torch.zeros_like(mask, dtype=torch.bool)
             noise_added = noise_added | (mask == 1)
@@ -220,6 +223,8 @@ class RFLOW:
 
         dtype = model.x_embedder.proj.weight.dtype
         all_timesteps = [int(t.to(dtype).item()) for t in timesteps]
+
+        latest_pred_output = None
         for i, t in progress_wrap(list(enumerate(timesteps))):
             # mask for adding noise
             if mask is not None:
@@ -234,12 +239,15 @@ class RFLOW:
                 z = torch.where(mask_add_noise[:, None, :, None, None], x_noise, x0)
                 noise_added = mask_t_upper
 
-            # classifier-free guidance
-            z_in = torch.cat([z, z], 0)
-            t = torch.cat([t, t], 0)
+            if ea_timesteps is None or latest_pred_output is None or t in ea_timesteps:
+                # classifier-free guidance
+                z_in = torch.cat([z, z], 0)
+                t = torch.cat([t, t], 0)
 
-            # pred = model(z_in, t, **model_args).chunk(2, dim=1)[0]
-            output = model(z_in, t, all_timesteps, **model_args)
+                # pred = model(z_in, t, **model_args).chunk(2, dim=1)[0]
+                output = model(z_in, t, all_timesteps, **model_args)
+            else:
+                output = latest_pred_output
 
             pred = output.chunk(2, dim=1)[0]
             pred_cond, pred_uncond = pred.chunk(2, dim=0)
