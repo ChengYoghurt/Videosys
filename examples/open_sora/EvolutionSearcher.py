@@ -68,8 +68,8 @@ def load_ref_videos(ref_videos_folder):
     for i in range(4):
         video_path = os.path.join(ref_videos_folder, f"{i}.pt")
         video = torch.load(video_path)
-        # video_normalized = video.float() / 255.0
-        ref_videos.append(video.float())
+        video_normalized = video.float() / 255.0
+        ref_videos.append(video_normalized)
     return ref_videos
 
 class EvolutionSearcher(object):
@@ -413,8 +413,9 @@ class EvolutionSearcher(object):
                 ea_timesteps=cand,
             ).video[0]
             # MSE Calculation
+            cand_video_float = cand_video.float() / 255.0
             ref_video = self.ref_videos[i]
-            mse_loss = F.mse_loss(cand_video.float(), ref_video)
+            mse_loss = F.mse_loss(cand_video_float, ref_video)
             mse_scores.append(mse_loss.item())
         
         return np.mean(mse_scores)
