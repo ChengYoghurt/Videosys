@@ -4,7 +4,7 @@ python examples/open_sora/search_ea.py \
 --outdir 'examples/open_sora/outputs/2sx480p_step15_search30_cache' \
 --n_samples 6 \
 --num_sample 1000 \
---time_step 50 \
+--time_step 15 \
 --max_epochs 30 \
 --population_num 50 \
 --mutation_num 20 \

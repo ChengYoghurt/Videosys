@@ -41,18 +41,17 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
     engine = VideoSysEngine(config)
 
     ea_timesteps_list = []
-    prompts = ["In a still frame, a stop sign",]
+    # prompts = ["In a still frame, a stop sign",]
     # seed=-1 means random seed. >0 means fixed seed.
     # File path
-    # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_dimension.txt"
+    prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_dimension.txt"
     # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/vbench_200/extracted_prompts_200.txt"
     # prompt_file_path = "/home/yfeng/ygcheng/src/Open-Sora/assets/texts/t2v_sora.txt"
-    # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_category.txt"
 
-    # # Read all prompts
-    # with open(prompt_file_path, "r") as f:
-    #     prompts = [line.strip() for line in f.readlines()]
-    #     # prompts = [line.strip() for i, line in enumerate(f.readlines()) if i % 16 == 0]
+    # Read all prompts
+    with open(prompt_file_path, "r") as f:
+        prompts = [line.strip() for line in f.readlines()]
+        # prompts = [line.strip() for i, line in enumerate(f.readlines()) if i % 16 == 0]
     import os
     save_videos_dir = "./outputs/os"
     os.makedirs(save_videos_dir, exist_ok=True)

@@ -152,7 +152,7 @@ class RFlowScheduler:
         """
         timepoints = timesteps.float() / self.num_timesteps
         timepoints = 1 - timepoints  # [1,1/1000]
-
+        
         # timepoint  (bsz) noise: (bsz, 4, frame, w ,h)
         # expand timepoint to noise shape
         timepoints = timepoints.unsqueeze(1).unsqueeze(1).unsqueeze(1).unsqueeze(1)
@@ -206,7 +206,8 @@ class RFLOW:
         model_args["y"] = torch.cat([model_args["y"], y_null], 0)
         # == prepare timesteps ==
         if ea_timesteps is not None:
-            timesteps = ea_timesteps # Add ea_timesteps
+            timesteps = [torch.tensor(t) for t in ea_timesteps] # Add ea_timesteps
+            timesteps = [t.unsqueeze(0).cuda() for t in timesteps]
         else:
             timesteps = [(1.0 - i / self.num_sampling_steps) * self.num_timesteps for i in range(self.num_sampling_steps)]
             if self.use_discrete_timesteps:
@@ -270,6 +271,5 @@ class RFLOW:
         timesteps = [(1.0 - i / self.num_sampling_steps) * self.num_timesteps for i in range(self.num_sampling_steps)]
         if self.use_timestep_transform:
             timesteps = [timestep_transform(t, additional_args, num_timesteps=self.num_timesteps) for t in timesteps]
-        full_timesteps = [t.item() for t in timesteps]
-        print("get_full_timesteps=", full_timesteps)
+        full_timesteps = [t.item() for t in timesteps] # get value from each tensor
         return full_timesteps

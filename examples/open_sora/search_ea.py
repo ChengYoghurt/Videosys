@@ -44,7 +44,7 @@ import copy
 from EvolutionSearcher import EvolutionSearcher
 
 # Videosys:Open-Sora-Plan related imports
-from videosys import OpenSoraConfig, VideoSysEngine
+from videosys import OpenSoraConfig, VideoSysEngine, OpenSoraPipeline
 
 def str2bool(value):
     """Convert string to boolean."""
@@ -196,21 +196,26 @@ def main():
     # ======================================================
     config = OpenSoraConfig(num_sampling_steps=30, cfg_scale=7.0, num_gpus=1)
     engine = VideoSysEngine(config)
+    pipeline = OpenSoraPipeline(config)
     print("engine initialized")
 
+    # == prepare model arguments ==
     model_args = engine.get_model_args(
-                    prompt=prompt,
+                    prompt="This is a prompt place holder",
                     resolution="480p",
                     aspect_ratio="9:16",
                     num_frames="2s",
                     seed=1024# -1,
-                )
+                )[0]
+
+    # == prepare rf sampler ==
+    sampler = pipeline.scheduler
 
     dpm_params = None
 
     ## build EA
     t = time.time()
-    searcher = EvolutionSearcher(opt=opt, engine=engine, time_step=opt.time_step, model_args=model_args, ref_videos=opt.ref_videos, ref_sigma=opt.ref_sigma, device=device, dpm_params=dpm_params)
+    searcher = EvolutionSearcher(opt=opt, engine=engine, sampler=sampler, time_step=opt.time_step, model_args=model_args, ref_videos=opt.ref_videos, ref_sigma=opt.ref_sigma, device=device, dpm_params=dpm_params)
     logging.info("Integrated Open-Sora Successfully ......")
 
     searcher.search()
