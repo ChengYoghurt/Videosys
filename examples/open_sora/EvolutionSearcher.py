@@ -28,7 +28,6 @@ import torch.nn.functional as F
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
 from ldm.models.diffusion.dpm_solver import DPMSolverSampler
-from ldm.data.build_dataloader import build_dataloader
 
 # from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
 from transformers import AutoFeatureExtractor
@@ -70,16 +69,16 @@ def load_ref_videos(ref_videos_folder):
         video_path = os.path.join(ref_videos_folder, f"{i}.pt")
         video = torch.load(video_path)
         # video_normalized = video.float() / 255.0
-        ref_videos.append(video)
+        ref_videos.append(video.float())
     return ref_videos
 
 class EvolutionSearcher(object):
 
-    def __init__(self, opt, engine, time_step, model_args, ref_videos, ref_sigma, device, dpm_params=None):
+    def __init__(self, opt, engine, sampler, time_step, model_args, ref_videos, ref_sigma, device, dpm_params=None):
         self.opt = opt
         self.engine = engine
+        self.sampler = sampler
         self.time_step = time_step
-        self.dataloader_info = dataloader_info
         self.model_args = model_args
         # self.cfg = cfg
         ## EA hyperparameters
@@ -108,7 +107,6 @@ class EvolutionSearcher(object):
 
         self.dpm_params = dpm_params
         self.device = device
-        self.dtype = dtype
     
     def update_top_k(self, candidates, *, k, key, reverse=False):
         assert k in self.keep_top_k
@@ -228,7 +226,8 @@ class EvolutionSearcher(object):
 
             candidates = []
             # for i in range(self.sampler.ddpm_num_timesteps):
-            for i in engine.scheduler.get_full_timesteps(additional_args=self.model_args): # TODO
+            full_timesteps = self.sampler.get_full_timesteps(additional_args=self.model_args)
+            for i in full_timesteps: # TODO
                 if i not in cand:
                     candidates.append(i)
 
@@ -308,7 +307,8 @@ class EvolutionSearcher(object):
 
             candidates = []
             # for i in range(self.sampler.ddpm_num_timesteps):
-            for i in engine.scheduler.get_full_timesteps(additional_args=self.model_args):
+            full_timesteps = self.sampler.get_full_timesteps(additional_args=self.model_args)
+            for i in full_timesteps:
                 if i not in cand:
                     candidates.append(i)
 
@@ -379,7 +379,9 @@ class EvolutionSearcher(object):
         # TODO: Swap the init timesteps with rf timesteps
         # original_num_steps = self.sampler.ddpm_num_timesteps
         # use_timestep = [i for i in range(original_num_steps)]
-        original_timestep = [(1.0 - i / engine.scheduler.num_sampling_steps) * engine.scheduler.num_timesteps for i in range(engine.scheduler.num_sampling_steps)] # Copied from rf __init__.py
+        # original_timestep = [(1.0 - i / self.sampler.num_sampling_steps) * self.sampler.num_timesteps for i in range(self.sampler.num_sampling_steps)] # Copied from rf __init__.py
+        full_timesteps = self.sampler.get_full_timesteps(additional_args=self.model_args)
+        original_timestep = full_timesteps
         random.shuffle(original_timestep)
         use_timestep = original_timestep[:self.time_step] # time_step is set by ea searcher
         return use_timestep
@@ -408,10 +410,11 @@ class EvolutionSearcher(object):
                 aspect_ratio="9:16",
                 num_frames="2s",
                 seed=1024,
+                ea_timesteps=cand,
             ).video[0]
             # MSE Calculation
             ref_video = self.ref_videos[i]
-            mse_loss = F.mse_loss(cand_video, ref_video)
+            mse_loss = F.mse_loss(cand_video.float(), ref_video)
             mse_scores.append(mse_loss.item())
         
         return np.mean(mse_scores)
