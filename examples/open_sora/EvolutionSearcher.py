@@ -408,7 +408,7 @@ class EvolutionSearcher(object):
                 prompt=prompt,
                 resolution="480p",
                 aspect_ratio="9:16",
-                num_frames="2s",
+                num_frames="4s",
                 seed=1024,
                 ea_timesteps=cand,
             ).video[0]
