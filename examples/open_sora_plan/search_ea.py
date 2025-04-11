@@ -172,6 +172,11 @@ def main():
         type=str2bool, # the parser does not automatically convert strings like 'false' or 'true' into actual boolean values (False or True).
         default=False,
     )
+    parser.add_argument(
+        "--load_log_path",
+        type=str,
+        default='',
+    )
 
     opt = parser.parse_args()
 
@@ -194,7 +199,7 @@ def main():
     # ======================================================
     # Integrate Open-Sora-Plan Configurations
     # ======================================================
-    config = OpenSoraPlanConfig(version="v120", transformer_type="93x480p", num_gpus=1)
+    config = OpenSoraPlanConfig(version="v120", transformer_type="93x480p", num_gpus=4)
     engine = VideoSysEngine(config)
     print("engine initialized")
 
