@@ -660,7 +660,7 @@ class OpenSoraPipeline(VideoSysPipeline):
     def save_video(self, video, output_path):
         save_video(video, output_path, fps=24)
 
-    def get_model_args(
+    def construct_full_timesteps(
         self,
         prompt: str,
         resolution="480p",
@@ -678,10 +678,7 @@ class OpenSoraPipeline(VideoSysPipeline):
         condition_frame_length: int = 5,
         align: int = 5,
         condition_frame_edit: float = 0.0,
-        return_dict: bool = True,
-        verbose: bool = True,
-        ea_timesteps: Optional[List[float]] = None,
-    ) -> Union[VideoSysPipelineOutput, Tuple]:
+    ):
         """
         Generate model args for timestep transform without evaluating transformer.
 
@@ -712,8 +709,67 @@ class OpenSoraPipeline(VideoSysPipeline):
         model_args = prepare_multi_resolution_info(
             "OpenSora", len(batch_prompts), image_size, num_frames, fps, self._device, self._dtype
         )
+
+        # == process prompts step by step ==
+        # 0. split prompt
+        # each element in the list is [prompt_segment_list, loop_idx_list]
+        batched_prompt_segment_list = []
+        batched_loop_idx_list = []
+        for prompt in batch_prompts:
+            prompt_segment_list, loop_idx_list = split_prompt(prompt)
+            batched_prompt_segment_list.append(prompt_segment_list)
+            batched_loop_idx_list.append(loop_idx_list)
+
+        # 2. append score
+        for idx, prompt_segment_list in enumerate(batched_prompt_segment_list):
+            batched_prompt_segment_list[idx] = append_score_to_prompts(
+                prompt_segment_list,
+                aes=aes,
+                flow=flow,
+                camera_motion=camera_motion,
+            )
+
+        # 3. clean prompt with T5
+        for idx, prompt_segment_list in enumerate(batched_prompt_segment_list):
+            batched_prompt_segment_list[idx] = [self.text_preprocessing(prompt) for prompt in prompt_segment_list]
+
+        # 4. merge to obtain the final prompt
+        batch_prompts = []
+        for prompt_segment_list, loop_idx_list in zip(batched_prompt_segment_list, batched_loop_idx_list):
+            batch_prompts.append(merge_prompt(prompt_segment_list, loop_idx_list))
+
+        # == Iter over loop generation ==
+        video_clips = []
+        for loop_i in range(loop):
+            # == get prompt for loop i ==
+            batch_prompts_loop = extract_prompts_loop(batch_prompts, loop_i)
+
+            # == add condition frames for loop ==
+            if loop_i > 0:
+                refs, ms = append_generated(
+                    self.vae, video_clips[-1], refs, ms, loop_i, condition_frame_length, condition_frame_edit
+                )
+
+            # == sampling ==
+            input_size = (num_frames, *image_size)
+            latent_size = self.vae.get_latent_size(input_size)
+            z = torch.randn(
+                len(batch_prompts), self.vae.out_channels, *latent_size, device=self._device, dtype=self._dtype
+            )
+            model_args.update(self.encode_prompt(batch_prompts_loop))
+            y_null = self.null_embed(len(batch_prompts_loop))
+
+            masks = apply_mask_strategy(z, refs, ms, loop_i, align=align)
+            full_timesteps = self.scheduler.construct_full_timesteps(
+                self.transformer,
+                z=z,
+                model_args=model_args,
+                y_null=y_null,
+                device=self._device,
+                mask=masks,
+            )
         
-        return model_args
+        return full_timesteps
 
 def load_prompts(prompt_path, start_idx=None, end_idx=None):
     with open(prompt_path, "r") as f:
