@@ -267,9 +267,30 @@ class RFLOW:
     def training_losses(self, model, x_start, model_kwargs=None, noise=None, mask=None, weights=None, t=None):
         return self.scheduler.training_losses(model, x_start, model_kwargs, noise, mask, weights, t)
 
-    def get_full_timesteps(self, additional_args):
+    def construct_full_timesteps(
+        self,
+        model,
+        z,
+        model_args,
+        y_null,
+        device,
+        mask=None,
+        guidance_scale=None,
+    ):
+
+        # if no specific guidance scale is provided, use the default scale when initializing the scheduler
+        if guidance_scale is None:
+            guidance_scale = self.cfg_scale
+
+        # text encoding
+        model_args["y"] = torch.cat([model_args["y"], y_null], 0)
+
+        # construct original timesteps
         timesteps = [(1.0 - i / self.num_sampling_steps) * self.num_timesteps for i in range(self.num_sampling_steps)]
+        if self.use_discrete_timesteps:
+            timesteps = [int(round(t)) for t in timesteps]
+        timesteps = [torch.tensor([t] * z.shape[0], device=device) for t in timesteps]
         if self.use_timestep_transform:
-            timesteps = [timestep_transform(t, additional_args, num_timesteps=self.num_timesteps) for t in timesteps]
-        full_timesteps = [t.item() for t in timesteps] # get value from each tensor
-        return full_timesteps
+            timesteps = [timestep_transform(t, model_args, num_timesteps=self.num_timesteps) for t in timesteps]
+
+        return [round(tensor.item()) for tensor in timesteps]
