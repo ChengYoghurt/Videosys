@@ -1,5 +1,5 @@
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
-CUDA_VISIBLE_DEVICES=7 \
+CUDA_VISIBLE_DEVICES=9 \
 python examples/open_sora/search_ea.py \
 --outdir 'examples/open_sora/outputs/4sx480p_step21_search30_cache' \
 --n_samples 6 \

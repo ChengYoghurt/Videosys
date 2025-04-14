@@ -200,7 +200,7 @@ def main():
     print("engine initialized")
 
     # == prepare model arguments ==
-    model_args = engine.get_model_args(
+    full_timesteps = engine.construct_full_timesteps(
                     prompt="This is a prompt place holder",
                     resolution="480p",
                     aspect_ratio="9:16",
@@ -208,14 +208,12 @@ def main():
                     seed=1024# -1,
                 )[0]
 
-    # == prepare rf sampler ==
-    sampler = pipeline.scheduler
-
+    print("in main", full_timesteps)
     dpm_params = None
 
     ## build EA
     t = time.time()
-    searcher = EvolutionSearcher(opt=opt, engine=engine, sampler=sampler, time_step=opt.time_step, model_args=model_args, ref_videos=opt.ref_videos, ref_sigma=opt.ref_sigma, device=device, dpm_params=dpm_params)
+    searcher = EvolutionSearcher(opt=opt, engine=engine, full_timesteps=full_timesteps, time_step=opt.time_step, ref_videos=opt.ref_videos, ref_sigma=opt.ref_sigma, device=device, dpm_params=dpm_params)
     logging.info("Integrated Open-Sora Successfully ......")
 
     searcher.search()

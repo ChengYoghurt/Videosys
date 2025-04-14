@@ -41,16 +41,14 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
     engine = VideoSysEngine(config)
 
     ea_timesteps_list = []
-    # prompts = ["In a still frame, a stop sign",]
+    prompts = ["In a still frame, a stop sign",]
     # seed=-1 means random seed. >0 means fixed seed.
-    # File path
-    prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/all_dimension.txt"
-    # prompt_file_path = "/home/yfeng/ygcheng/src/VBench/prompts/vbench_200/extracted_prompts_200.txt"
-    # prompt_file_path = "/home/yfeng/ygcheng/src/Open-Sora/assets/texts/t2v_sora.txt"
+    # # File path
+    # prompt_file_path = "/home/yuge/src/Vbench/prompts/all_dimension.txt"
 
-    # Read all prompts
-    with open(prompt_file_path, "r") as f:
-        prompts = [line.strip() for line in f.readlines()]
+    # # Read all prompts
+    # with open(prompt_file_path, "r") as f:
+    #     prompts = [line.strip() for line in f.readlines()]
         # prompts = [line.strip() for i, line in enumerate(f.readlines()) if i % 16 == 0]
     import os
     save_videos_dir = "./outputs/os"
@@ -60,7 +58,7 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
         if load_ea_timesteps:
             import yaml
             # Load YAML file
-            ea_timesteps_path = "examples/open_sora_plan/outputs/29x480p_step50_search100_cache/ea_timesteps.yaml"
+            ea_timesteps_path = "examples/open_sora/outputs/2sx480p_step15_search30_cache/ea_timesteps.yaml"
             with open(ea_timesteps_path, "r") as file:
                 ea = yaml.safe_load(file)  # Use safe_load to avoid execution risks
 
@@ -73,7 +71,7 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
             ea_path = Path(ea_timesteps_path)
 
             # Construct new folder path
-            videos_folder = ea_path.parent / "videos_test"
+            videos_folder = ea_path.parent / "videos_vb900"
 
             # Create the folder if it doesn't exist
             videos_folder.mkdir(parents=True, exist_ok=True)
@@ -83,11 +81,12 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
                     resolution="480p",
                     aspect_ratio="9:16",
                     num_frames="2s",
+                    ea_timesteps=ea_timesteps,
                     seed=1024# -1,
                 ).video[0]
                 video_filename = f"{prompt}.mp4"  # Format index as 4 digits (e.g., 0000, 0001, etc.)
-                save_path = os.path.join(save_videos_dir, video_filename)
-                engine.save_video(video, save_path)
+                video_save_path = os.path.join(videos_folder, video_filename)
+                engine.save_video(video, video_save_path)
                 print(f"Saved video with EA timesteps to {video_save_path}")
         else:
             print("Generating videos WITHOUT EA...")

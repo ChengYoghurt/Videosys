@@ -74,12 +74,11 @@ def load_ref_videos(ref_videos_folder):
 
 class EvolutionSearcher(object):
 
-    def __init__(self, opt, engine, sampler, time_step, model_args, ref_videos, ref_sigma, device, dpm_params=None):
+    def __init__(self, opt, engine, full_timesteps, time_step, ref_videos, ref_sigma, device, dpm_params=None):
         self.opt = opt
         self.engine = engine
-        self.sampler = sampler
+        self.full_timesteps = full_timesteps
         self.time_step = time_step
-        self.model_args = model_args
         # self.cfg = cfg
         ## EA hyperparameters
         self.max_epochs = opt.max_epochs
@@ -234,7 +233,7 @@ class EvolutionSearcher(object):
 
             candidates = []
             # for i in range(self.sampler.ddpm_num_timesteps):
-            full_timesteps = self.sampler.get_full_timesteps(additional_args=self.model_args)
+            full_timesteps = self.full_timesteps
             for i in full_timesteps: # TODO
                 if i not in cand:
                     candidates.append(i)
@@ -315,7 +314,7 @@ class EvolutionSearcher(object):
 
             candidates = []
             # for i in range(self.sampler.ddpm_num_timesteps):
-            full_timesteps = self.sampler.get_full_timesteps(additional_args=self.model_args)
+            full_timesteps = self.full_timesteps
             for i in full_timesteps:
                 if i not in cand:
                     candidates.append(i)
@@ -388,7 +387,7 @@ class EvolutionSearcher(object):
         # original_num_steps = self.sampler.ddpm_num_timesteps
         # use_timestep = [i for i in range(original_num_steps)]
         # original_timestep = [(1.0 - i / self.sampler.num_sampling_steps) * self.sampler.num_timesteps for i in range(self.sampler.num_sampling_steps)] # Copied from rf __init__.py
-        full_timesteps = self.sampler.get_full_timesteps(additional_args=self.model_args)
+        full_timesteps = self.full_timesteps
         original_timestep = full_timesteps
         random.shuffle(original_timestep)
         use_timestep = original_timestep[:self.time_step] # time_step is set by ea searcher
