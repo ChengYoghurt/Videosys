@@ -50,9 +50,19 @@ def run_pab():
     config = OpenSoraConfig(enable_pab=True)
     engine = VideoSysEngine(config)
 
-    prompt = "Sunset over the sea."
-    video = engine.generate(prompt).video[0]
-    engine.save_video(video, f"./outputs/{prompt}.mp4")
+    prompt = "A tranquil tableau of alley"
+    video = engine.generate(
+        prompt=prompt,
+        num_frames="4s",
+        seed=1024
+    ).video[0]
+
+    # Save video
+    save_videos_dir = "/home/yuge/src/tmp/pab246"
+    os.makedirs(save_videos_dir, exist_ok=True)
+    video_filename = f"{prompt}.mp4"
+    save_path = os.path.join(save_videos_dir, video_filename)
+    engine.save_video(save_videos_dir, save_path)
 
 
 if __name__ == "__main__":
