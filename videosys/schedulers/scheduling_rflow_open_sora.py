@@ -206,15 +206,16 @@ class RFLOW:
         model_args["y"] = torch.cat([model_args["y"], y_null], 0)
         # == prepare timesteps ==
         if ea_timesteps is not None:
-            timesteps = [torch.tensor(t) for t in ea_timesteps] # Add ea_timesteps
-            timesteps = [t.unsqueeze(0).cuda() for t in timesteps]
-        else:
-            timesteps = [(1.0 - i / self.num_sampling_steps) * self.num_timesteps for i in range(self.num_sampling_steps)]
-            if self.use_discrete_timesteps:
-                timesteps = [int(round(t)) for t in timesteps]
-            timesteps = [torch.tensor([t] * z.shape[0], device=device) for t in timesteps]
-            if self.use_timestep_transform:
-                timesteps = [timestep_transform(t, model_args, num_timesteps=self.num_timesteps) for t in timesteps]
+            ea_timesteps = [torch.tensor(t) for t in ea_timesteps] # Add ea_timesteps
+            ea_timesteps = [t.unsqueeze(0).cuda() for t in ea_timesteps]
+        
+        # construct full timesteps
+        timesteps = [(1.0 - i / self.num_sampling_steps) * self.num_timesteps for i in range(self.num_sampling_steps)]
+        if self.use_discrete_timesteps:
+            timesteps = [int(round(t)) for t in timesteps]
+        timesteps = [torch.tensor([t] * z.shape[0], device=device) for t in timesteps]
+        if self.use_timestep_transform:
+            timesteps = [timestep_transform(t, model_args, num_timesteps=self.num_timesteps) for t in timesteps]
 
         if mask is not None:
             noise_added = torch.zeros_like(mask, dtype=torch.bool)
@@ -223,7 +224,8 @@ class RFLOW:
         progress_wrap = tqdm if progress and dist.get_rank() == 0 else (lambda x: x)
 
         dtype = model.x_embedder.proj.weight.dtype
-        all_timesteps = [int(t.to(dtype).item()) for t in timesteps]
+        if ea_timesteps:
+            ea_timesteps_ = [int(t.to(dtype).item()) for t in ea_timesteps] 
 
         latest_pred_output = None
         for i, t in progress_wrap(list(enumerate(timesteps))):
@@ -240,16 +242,19 @@ class RFLOW:
                 z = torch.where(mask_add_noise[:, None, :, None, None], x_noise, x0)
                 noise_added = mask_t_upper
 
-            if ea_timesteps is None or latest_pred_output is None or t in ea_timesteps:
+            t_ = int(t.to(dtype).item())
+
+            if ea_timesteps is None or latest_pred_output is None or t_ in ea_timesteps_:
                 # classifier-free guidance
                 z_in = torch.cat([z, z], 0)
                 t = torch.cat([t, t], 0)
 
                 # pred = model(z_in, t, **model_args).chunk(2, dim=1)[0]
-                output = model(z_in, t, all_timesteps, **model_args)
+                output = model(z_in, t, timesteps, **model_args)
+                latest_pred_output = output
             else:
                 output = latest_pred_output
-
+            
             pred = output.chunk(2, dim=1)[0]
             pred_cond, pred_uncond = pred.chunk(2, dim=0)
             v_pred = pred_uncond + guidance_scale * (pred_cond - pred_uncond)
@@ -293,4 +298,4 @@ class RFLOW:
         if self.use_timestep_transform:
             timesteps = [timestep_transform(t, model_args, num_timesteps=self.num_timesteps) for t in timesteps]
 
-        return [round(tensor.item()) for tensor in timesteps]
+        return [tensor.item() for tensor in timesteps]

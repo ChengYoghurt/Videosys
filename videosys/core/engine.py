@@ -100,8 +100,8 @@ class VideoSysEngine:
     def generate(self, *args, **kwargs):
         return self._run_workers("generate", *args, **kwargs)[0]
 
-    def get_model_args(self, *args, **kwargs):
-        return self._run_workers("get_model_args", *args, **kwargs)
+    def construct_full_timesteps(self, *args, **kwargs):
+        return self._run_workers("construct_full_timesteps", *args, **kwargs)
 
     def stop_remote_worker_execution_loop(self) -> None:
         if self.parallel_worker_tasks is None:
