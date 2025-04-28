@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import sys
 import time
+import re
 
 import argparse
 import os
@@ -106,6 +107,42 @@ class EvolutionSearcher(object):
 
         self.dpm_params = dpm_params
         self.device = device
+
+        if opt.load_log_path:
+            self.load_log(opt.load_log_path)
+
+    def load_log(self, log_file_path):
+        # Regex pattern to extract cand and mse
+        pattern = r"cand: (\[.*?\]), mse: ([\d.]+)"
+        
+        with open(log_file_path, 'r') as f:
+            for line in f:
+                match = re.search(pattern, line)
+                if match:
+                    cand_str = match.group(1)
+                    mse = float(match.group(2))
+                    
+                    # Add to vis_dict
+                    if cand_str not in self.vis_dict:
+                        self.vis_dict[cand_str] = {
+                            'visited': True,
+                            'mse': mse
+                        }
+        
+        # Sort all candidates by MSE and populate keep_top_k
+        sorted_candidates = sorted(
+            self.vis_dict.items(),
+            key=lambda x: x[1]['mse']
+        )
+        
+        # Extract top-k candidates (select_num and 50)
+        top_select_num = [cand for cand, _ in sorted_candidates[:self.select_num]]
+        top_50 = [cand for cand, _ in sorted_candidates[:50]]
+        
+        self.keep_top_k[self.select_num] = top_select_num
+        self.keep_top_k[50] = top_50
+
+        print("Loaded keep_top_k:", self.keep_top_k)
     
     def update_top_k(self, candidates, *, k, key, reverse=False):
         assert k in self.keep_top_k

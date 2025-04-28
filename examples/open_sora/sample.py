@@ -1,4 +1,6 @@
 from videosys import OpenSoraConfig, VideoSysEngine
+import os
+import torch
 
 def load_prompts_from_file(file_path):
     """Reads prompts from a text file, one per line."""
@@ -50,19 +52,23 @@ def run_pab():
     config = OpenSoraConfig(enable_pab=True)
     engine = VideoSysEngine(config)
 
-    prompt = "A tranquil tableau of alley"
-    video = engine.generate(
-        prompt=prompt,
-        num_frames="4s",
-        seed=1024
-    ).video[0]
+    prompt_file_path = "/home/yuge/src/Vbench/prompts/all_dimension.txt"
+    prompts = load_prompts_from_file(prompt_file_path)
 
-    # Save video
-    save_videos_dir = "/home/yuge/src/tmp/pab246"
+    # Prepare save folder
+    save_videos_dir = "/home/yuge/src/Videosys/outputs/os/4sx480p_pab246"
     os.makedirs(save_videos_dir, exist_ok=True)
-    video_filename = f"{prompt}.mp4"
-    save_path = os.path.join(save_videos_dir, video_filename)
-    engine.save_video(save_videos_dir, save_path)
+    for i, prompt in enumerate(prompts):
+        video = engine.generate(
+            prompt=prompt,
+            num_frames="4s",
+            seed=1024
+        ).video[0]
+
+        # Save video
+        video_filename = f"{prompt}.mp4"
+        save_path = os.path.join(save_videos_dir, video_filename)
+        engine.save_video(video, save_path)
 
 
 if __name__ == "__main__":

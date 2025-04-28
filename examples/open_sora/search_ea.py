@@ -172,6 +172,11 @@ def main():
         type=str2bool, # the parser does not automatically convert strings like 'false' or 'true' into actual boolean values (False or True).
         default=False,
     )
+    parser.add_argument(
+        "--load_log_path",
+        type=str,
+        default='',
+    )
 
     opt = parser.parse_args()
 
@@ -199,16 +204,17 @@ def main():
     pipeline = OpenSoraPipeline(config)
     print("engine initialized")
 
+    full_timesteps_num_frames="4s"
     # == prepare model arguments ==
     full_timesteps = engine.construct_full_timesteps(
                     prompt="This is a prompt place holder",
                     resolution="480p",
                     aspect_ratio="9:16",
-                    num_frames="4s",
+                    num_frames=full_timesteps_num_frames,
                     seed=1024# -1,
                 )[0]
 
-    print("in main", full_timesteps)
+    print("in main num_frames=", full_timesteps_num_frames, "\nfull_timsteps=", full_timesteps)
     dpm_params = None
 
     ## build EA
