@@ -199,7 +199,7 @@ def main():
     # ======================================================
     # Integrate Open-Sora-Plan Configurations
     # ======================================================
-    config = OpenSoraConfig(num_sampling_steps=30, cfg_scale=7.0, num_gpus=1)
+    config = OpenSoraConfig(num_sampling_steps=30, cfg_scale=7.0, num_gpus=2)
     engine = VideoSysEngine(config)
     pipeline = OpenSoraPipeline(config)
     print("engine initialized")

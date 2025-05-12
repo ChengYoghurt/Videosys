@@ -44,7 +44,7 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
     # prompts = ["In a still frame, a stop sign",]
     # seed=-1 means random seed. >0 means fixed seed.
     # # File path
-    prompt_file_path = "/home/yuge/src/tmp/vbench_prompts/all_dimension_part1.txt"
+    prompt_file_path = "/home/yuge/src/Vbench/prompts/all_dimension.txt" # "/home/yuge/src/tmp/vbench_prompts/all_dimension_part1.txt"
 
     # Read all prompts
     with open(prompt_file_path, "r") as f:
@@ -57,7 +57,7 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
 
         if load_ea_timesteps:
             # Load YAML file
-            ea_timesteps_path = "examples/open_sora/outputs/4sx480p_step15_search30_cache/ea_timesteps.yaml"
+            ea_timesteps_path = "examples/open_sora/outputs/2sx480p_step12_search30_cache/ea_timesteps.yaml"
             with open(ea_timesteps_path, "r") as file:
                 ea = yaml.safe_load(file)  # Use safe_load to avoid execution risks
 
@@ -77,7 +77,7 @@ def run_base(save_ref_videos=False, load_ea_timesteps=False):
                     prompt=prompt,
                     resolution="480p",
                     aspect_ratio="9:16",
-                    num_frames="4s",
+                    num_frames="2s",
                     ea_timesteps=ea_timesteps,
                     seed=1024# -1,
                 ).video[0]
